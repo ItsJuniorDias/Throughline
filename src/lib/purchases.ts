@@ -166,7 +166,9 @@ export function buildPlans(pkgs: any[]): Plan[] {
   const sorted = [...pkgs].sort(
     (a, b) => (RANK[a.packageType] ?? 9) - (RANK[b.packageType] ?? 9),
   );
+
   const monthly = sorted.find((p) => p.packageType === "MONTHLY");
+
   const monthlyPrice =
     typeof monthly?.product?.price === "number"
       ? monthly.product.price
@@ -231,7 +233,8 @@ const revenueCatProvider: PurchasesProvider = {
   async getPlans() {
     const Purchases = rc();
     const offerings = await Purchases.getOfferings();
-    const pkgs: any[] = offerings?.current?.availablePackages ?? [];
+    const pkgs = offerings?.current?.availablePackages ?? [];
+
     _packages = new Map(pkgs.map((p) => [p.identifier, p]));
     return buildPlans(pkgs);
   },

@@ -70,6 +70,7 @@ function PlanCard({
   onPress: () => void;
 }) {
   const t = useTheme();
+
   return (
     <Pressable
       accessibilityRole="radio"
@@ -133,6 +134,7 @@ function PlanCard({
             </View>
           ) : null}
         </View>
+
         {plan.perMonthString ? (
           <Text variant="caption" color="textMuted" style={{ marginTop: 2 }}>
             {plan.perMonthString}
@@ -245,6 +247,9 @@ export default function Paywall() {
     purchaseSelected,
     restore,
   } = useSubscription();
+
+  console.log(plans, "PLANS");
+
   const [justPurchased, setJustPurchased] = useState(false);
 
   useEffect(() => {
