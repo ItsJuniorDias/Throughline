@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "Throughline",
+    "slug": "throughline",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "scheme": "throughline",
+    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.throughline.app"
+    },
+    "android": {
+      "package": "com.throughline.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#15171B"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#ECEDEB",
+          "dark": {
+            "backgroundColor": "#15171B"
+          }
+        }
+      ]
+    ]
+  }
+}
