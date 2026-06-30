@@ -42,7 +42,7 @@ export default function ComposeScreen() {
   const entries = useJournal((s) => s.entries);
   const addEntry = useJournal((s) => s.addEntry);
 
-  const prompt = promptById(params.promptId);
+  const promptId = promptById(params.promptId);
   const initialMood = params.mood ? (Number(params.mood) as Mood) : null;
 
   const [mood, setMood] = useState<Mood | null>(initialMood);
@@ -127,7 +127,7 @@ export default function ComposeScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* prompt context */}
-          {prompt ? (
+          {promptId ? (
             <View
               style={{
                 borderLeftWidth: 3,
@@ -140,7 +140,7 @@ export default function ComposeScreen() {
                 {tr('compose.respondingTo')}
               </Text>
               <Text variant="serifQuote" color="textSecondary">
-                {prompt.text}
+                {tr(`prompt.items.${promptId}`)}
               </Text>
             </View>
           ) : null}

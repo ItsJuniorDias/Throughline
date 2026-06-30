@@ -30,7 +30,7 @@ export default function EntryDetailScreen() {
   const deleteEntry = useJournal((s) => s.deleteEntry);
 
   const entry = getEntryById(entries, id);
-  const prompt = entry ? promptById(entry.promptId) : undefined;
+  const promptId = entry ? promptById(entry.promptId) : undefined;
   const mood = entry ? moodMeta(entry.mood) : null;
 
   const insightStatus = useInsights((s) => (entry ? s.entryStatus[entry.id] : undefined));
@@ -112,7 +112,7 @@ export default function EntryDetailScreen() {
           </View>
 
           {/* prompt context */}
-          {prompt ? (
+          {promptId ? (
             <View
               style={{
                 borderLeftWidth: 3,
@@ -125,7 +125,7 @@ export default function EntryDetailScreen() {
                 {tr('entry.inResponseTo')}
               </Text>
               <Text variant="serifQuote" color="textSecondary">
-                {prompt.text}
+                {tr(`prompt.items.${promptId}`)}
               </Text>
             </View>
           ) : null}

@@ -149,7 +149,7 @@ export default function TodayScreen() {
 
   const streak = useMemo(() => computeStreak(entries), [entries]);
   const week = useMemo(() => moodByDay(entries, 7), [entries]);
-  const prompt = useMemo(() => promptOfTheDay(), []);
+  const promptId = useMemo(() => promptOfTheDay(), []);
   const latest = entries[0];
 
   // warm the day's read so it's ready when they open Insights
@@ -200,7 +200,10 @@ export default function TodayScreen() {
       </View>
 
       {/* daily prompt */}
-      <PromptCard prompt={prompt.text} onPress={() => openComposer({ promptId: prompt.id })} />
+      <PromptCard
+        prompt={tr(`prompt.items.${promptId}`)}
+        onPress={() => openComposer({ promptId })}
+      />
 
       {/* quick mood check-in */}
       <Card elevation="sm" style={{ gap: t.space[4] }}>

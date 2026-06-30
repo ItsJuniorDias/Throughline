@@ -2,36 +2,50 @@
  * Reflection prompts. Kept deliberately open-ended and non-clinical — this is a
  * journaling/self-knowledge tool, not therapy. The "of the day" pick is
  * deterministic per calendar day so the prompt is stable across app opens.
+ *
+ * Only the IDs live here; each prompt's text lives in the i18n dictionaries
+ * under `prompt.items.<id>`, so prompts are translated per language. IDs are
+ * stored on entries (entry.promptId), so they are stable — never renumber them.
  */
 
 import { dayKey } from '../lib/date';
+import { translate } from '../i18n';
 
-export const PROMPTS: { id: string; text: string }[] = [
-  { id: 'p01', text: 'What pulled at your attention most today, and why that?' },
-  { id: 'p02', text: 'Name one thing you decided today. What were you weighing?' },
-  { id: 'p03', text: 'Where did you feel most like yourself today?' },
-  { id: 'p04', text: 'What drained you, and what was worth the cost?' },
-  { id: 'p05', text: 'What would you tell yourself from this morning, knowing how the day went?' },
-  { id: 'p06', text: 'Something small that went better than expected.' },
-  { id: 'p07', text: 'What are you avoiding, and what is it protecting you from?' },
-  { id: 'p08', text: 'Who crossed your mind today that you didn’t reach out to?' },
-  { id: 'p09', text: 'What did today teach you that yesterday hadn’t?' },
-  { id: 'p10', text: 'If today had a single sentence, what would it be?' },
-  { id: 'p11', text: 'What felt heavier than it should have? Sit with why.' },
-  { id: 'p12', text: 'A moment you’d want to remember a year from now.' },
-  { id: 'p13', text: 'What did you give your energy to, and was it on purpose?' },
-  { id: 'p14', text: 'Where did you change your mind, even slightly?' },
-];
+/** Canonical prompt IDs, in display order. */
+export const PROMPT_IDS = [
+  'p01',
+  'p02',
+  'p03',
+  'p04',
+  'p05',
+  'p06',
+  'p07',
+  'p08',
+  'p09',
+  'p10',
+  'p11',
+  'p12',
+  'p13',
+  'p14',
+] as const;
 
-export function promptById(id: string | undefined) {
-  return PROMPTS.find((p) => p.id === id);
+export type PromptId = (typeof PROMPT_IDS)[number];
+
+/** Localized text for a prompt id, in the current language (safe outside React). */
+export function promptText(id: string): string {
+  return translate(`prompt.items.${id}`);
 }
 
-/** Stable prompt for a given day (defaults to today). */
-export function promptOfTheDay(d = new Date()) {
+/** Returns the id if it's a known prompt, else undefined. */
+export function promptById(id: string | undefined): PromptId | undefined {
+  return PROMPT_IDS.find((p) => p === id);
+}
+
+/** Stable prompt id for a given day (defaults to today). */
+export function promptOfTheDay(d = new Date()): PromptId {
   const key = dayKey(d);
   let hash = 0;
   for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) | 0;
-  const idx = Math.abs(hash) % PROMPTS.length;
-  return PROMPTS[idx];
+  const idx = Math.abs(hash) % PROMPT_IDS.length;
+  return PROMPT_IDS[idx];
 }

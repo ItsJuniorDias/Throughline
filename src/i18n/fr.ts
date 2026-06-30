@@ -47,6 +47,22 @@ const fr: Resources = {
   prompt: {
     eyebrow: 'Sujet du jour',
     cta: 'Écrire à ce sujet',
+    items: {
+      p01: 'Qu’est-ce qui a le plus attiré votre attention aujourd’hui, et pourquoi cela ?',
+      p02: 'Nommez une décision prise aujourd’hui. Que pesiez-vous ?',
+      p03: 'Où vous êtes-vous senti le plus vous-même aujourd’hui ?',
+      p04: 'Qu’est-ce qui vous a épuisé, et qu’est-ce qui en valait la peine ?',
+      p05: 'Que diriez-vous au vous de ce matin, sachant comment la journée s’est passée ?',
+      p06: 'Une petite chose qui s’est mieux passée que prévu.',
+      p07: 'Qu’évitez-vous, et de quoi cela vous protège-t-il ?',
+      p08: 'À qui avez-vous pensé aujourd’hui sans le contacter ?',
+      p09: 'Que vous a appris aujourd’hui que hier n’avait pas appris ?',
+      p10: 'Si aujourd’hui tenait en une phrase, laquelle serait-ce ?',
+      p11: 'Qu’avez-vous ressenti comme plus lourd que ça ne devrait ? Posez-vous sur le pourquoi.',
+      p12: 'Un moment que vous voudriez vous rappeler dans un an.',
+      p13: 'À quoi avez-vous donné votre énergie, et était-ce volontaire ?',
+      p14: 'Où avez-vous changé d’avis, ne serait-ce qu’un peu ?',
+    },
   },
 
   today: {

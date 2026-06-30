@@ -54,6 +54,23 @@ const en = {
   prompt: {
     eyebrow: 'Prompt for today',
     cta: 'Write on this',
+    // The 14 reflection prompts, keyed by stable id (see src/constants/prompts.ts).
+    items: {
+      p01: 'What pulled at your attention most today, and why that?',
+      p02: 'Name one thing you decided today. What were you weighing?',
+      p03: 'Where did you feel most like yourself today?',
+      p04: 'What drained you, and what was worth the cost?',
+      p05: 'What would you tell yourself from this morning, knowing how the day went?',
+      p06: 'Something small that went better than expected.',
+      p07: 'What are you avoiding, and what is it protecting you from?',
+      p08: 'Who crossed your mind today that you didn’t reach out to?',
+      p09: 'What did today teach you that yesterday hadn’t?',
+      p10: 'If today had a single sentence, what would it be?',
+      p11: 'What felt heavier than it should have? Sit with why.',
+      p12: 'A moment you’d want to remember a year from now.',
+      p13: 'What did you give your energy to, and was it on purpose?',
+      p14: 'Where did you change your mind, even slightly?',
+    },
   },
 
   today: {

@@ -47,6 +47,22 @@ const pt: Resources = {
   prompt: {
     eyebrow: 'Tema de hoje',
     cta: 'Escrever sobre isso',
+    items: {
+      p01: 'O que mais puxou sua atenção hoje, e por que isso?',
+      p02: 'Cite uma coisa que você decidiu hoje. O que estava pesando?',
+      p03: 'Onde você mais se sentiu você mesmo hoje?',
+      p04: 'O que te esgotou, e o que valeu o custo?',
+      p05: 'O que você diria para si mesmo desta manhã, sabendo como o dia foi?',
+      p06: 'Algo pequeno que saiu melhor do que o esperado.',
+      p07: 'O que você está evitando, e do que isso está te protegendo?',
+      p08: 'Quem passou pela sua cabeça hoje e você não procurou?',
+      p09: 'O que hoje te ensinou que ontem não tinha ensinado?',
+      p10: 'Se hoje fosse uma única frase, qual seria?',
+      p11: 'O que pareceu mais pesado do que deveria? Reflita sobre o porquê.',
+      p12: 'Um momento que você gostaria de lembrar daqui a um ano.',
+      p13: 'A que você deu sua energia, e foi de propósito?',
+      p14: 'Onde você mudou de ideia, mesmo que um pouco?',
+    },
   },
 
   today: {

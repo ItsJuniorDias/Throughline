@@ -47,6 +47,22 @@ const es: Resources = {
   prompt: {
     eyebrow: 'Tema de hoy',
     cta: 'Escribir sobre esto',
+    items: {
+      p01: '¿Qué fue lo que más llamó tu atención hoy, y por qué eso?',
+      p02: 'Nombra una cosa que decidiste hoy. ¿Qué estabas sopesando?',
+      p03: '¿Dónde te sentiste más tú mismo hoy?',
+      p04: '¿Qué te agotó, y qué valió la pena?',
+      p05: '¿Qué le dirías a quien fuiste esta mañana, sabiendo cómo fue el día?',
+      p06: 'Algo pequeño que salió mejor de lo esperado.',
+      p07: '¿Qué estás evitando, y de qué te protege?',
+      p08: '¿Quién pasó por tu mente hoy y no contactaste?',
+      p09: '¿Qué te enseñó hoy que ayer no?',
+      p10: 'Si hoy fuera una sola frase, ¿cuál sería?',
+      p11: '¿Qué sentiste más pesado de lo que debería? Detente en el porqué.',
+      p12: 'Un momento que querrías recordar dentro de un año.',
+      p13: '¿A qué le diste tu energía, y fue a propósito?',
+      p14: '¿En qué cambiaste de opinión, aunque sea un poco?',
+    },
   },
 
   today: {
