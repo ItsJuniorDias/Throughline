@@ -6,11 +6,13 @@
 import React from 'react';
 import { View } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useT } from '../../i18n';
 import { Text } from '../ui/Text';
 import { Icon } from '../ui/Divider';
 
 export function StreakBadge({ days }: { days: number }) {
   const t = useTheme();
+  const tr = useT();
   if (days <= 0) {
     return (
       <View
@@ -27,7 +29,7 @@ export function StreakBadge({ days }: { days: number }) {
       >
         <Icon name="circle" size={12} colorKey="textMuted" />
         <Text variant="mono" color="textMuted">
-          START TODAY
+          {tr('streak.startToday')}
         </Text>
       </View>
     );
@@ -49,7 +51,7 @@ export function StreakBadge({ days }: { days: number }) {
     >
       <Icon name="zap" size={13} colorKey="accentText" />
       <Text variant="mono" color="accentText">
-        {days} DAY{days === 1 ? '' : 'S'}
+        {tr('streak.days', { count: days })}
       </Text>
     </View>
   );

@@ -23,7 +23,8 @@
 import type { Entry } from '../data/types';
 import { MODELS, FREE_FALLBACKS, complete, completeJSON, type ChatMessage } from './openrouter';
 import { shortDate } from './date';
-import { moodMeta } from './mood';
+import { moodLabel } from './mood';
+import { translate, getActiveLanguage } from '../i18n';
 
 // Model chains tried in order on rate-limit. Weekly is cheap → free chain;
 // the daily read starts from MODELS.report (which may be a paid frontier model
@@ -31,17 +32,26 @@ import { moodMeta } from './mood';
 const WEEKLY_MODELS = FREE_FALLBACKS;
 const DAILY_MODELS = Array.from(new Set([MODELS.report, ...FREE_FALLBACKS]));
 
-const SYSTEM = [
-  'You are a reflective journaling companion for an app called Throughline.',
-  'You write honest, specific, warm observations about patterns in someone\'s journal.',
-  'You are NOT a therapist or doctor. Never diagnose. Never give medical, clinical, or',
-  'prescriptive advice. Reflect and notice; do not instruct or tell them what to do.',
-  'Write in English, in a calm, literary, concrete voice. Be specific to their entries —',
-  'no generic platitudes. Address the reader as "you". Keep it tight.',
-  'If entries express thoughts of self-harm or crisis, do not analyze them — gently',
-  'acknowledge it sounds heavy and suggest reaching out to someone they trust or a local',
-  'crisis line.',
-].join(' ');
+/**
+ * System prompt, built per call so the model writes the read in the user's
+ * chosen language (getActiveLanguage().ai resolves to e.g. "Brazilian
+ * Portuguese"). The no-diagnosis / no-advice guardrails and the voice are
+ * constant; only the target language changes.
+ */
+function buildSystem(): string {
+  const language = getActiveLanguage().ai;
+  return [
+    'You are a reflective journaling companion for an app called Throughline.',
+    "You write honest, specific, warm observations about patterns in someone's journal.",
+    'You are NOT a therapist or doctor. Never diagnose. Never give medical, clinical, or',
+    'prescriptive advice. Reflect and notice; do not instruct or tell them what to do.',
+    `Write entirely in ${language}, in a calm, literary, concrete voice. Be specific to their`,
+    'entries — no generic platitudes. Address the reader as "you". Keep it tight.',
+    'If entries express thoughts of self-harm or crisis, do not analyze them — gently',
+    'acknowledge it sounds heavy and suggest reaching out to someone they trust or a local',
+    'crisis line.',
+  ].join(' ');
+}
 
 /** One compact line per entry — the model input. */
 export function buildDigest(entries: Entry[]): string {
@@ -49,7 +59,7 @@ export function buildDigest(entries: Entry[]): string {
     .slice() // newest-first already; keep order
     .map((e) => {
       const date = shortDate(e.createdAt);
-      const mood = moodMeta(e.mood).label;
+      const mood = moodLabel(e.mood);
       const tags = e.tags.length ? ` · ${e.tags.join(', ')}` : '';
       const gist = (e.summary?.gist ?? e.text).replace(/\s+/g, ' ').trim().slice(0, 240);
       return `- ${date} · ${mood}${tags}: ${gist}`;
@@ -65,7 +75,7 @@ export async function generateWeeklyObservation(
 ): Promise<string> {
   const digest = buildDigest(entries);
   const messages: ChatMessage[] = [
-    { role: 'system', content: SYSTEM },
+    { role: 'system', content: buildSystem() },
     {
       role: 'user',
       content:
@@ -124,7 +134,7 @@ export async function generateDailyReport(
     : '';
 
   const messages: ChatMessage[] = [
-    { role: 'system', content: SYSTEM },
+    { role: 'system', content: buildSystem() },
     {
       role: 'user',
       content:
@@ -146,7 +156,7 @@ export async function generateDailyReport(
 
   // light normalization so the UI never crashes on a malformed field
   return {
-    title: report.title?.trim() || `Your ${dateLabel}`,
+    title: report.title?.trim() || translate('ai.yourDay', { label: dateLabel }),
     read: report.read?.trim() || '',
     throughline: report.throughline?.trim() || undefined,
     focus: report.focus?.trim() || undefined,
@@ -172,7 +182,7 @@ export async function generateEntryInsight(
   signal?: AbortSignal,
 ): Promise<EntryInsight> {
   const date = shortDate(entry.createdAt);
-  const mood = moodMeta(entry.mood).label;
+  const mood = moodLabel(entry.mood);
   const tags = entry.tags.length ? entry.tags.join(', ') : '—';
   const schema = `{
   "gist": "a 4-8 word distillation of this entry",
@@ -180,7 +190,7 @@ export async function generateEntryInsight(
   "reflection": "2-3 sentences reflecting back a pattern, tension, or what this entry quietly reveals"
 }`;
   const messages: ChatMessage[] = [
-    { role: 'system', content: SYSTEM },
+    { role: 'system', content: buildSystem() },
     {
       role: 'user',
       content:

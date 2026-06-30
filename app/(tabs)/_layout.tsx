@@ -21,25 +21,27 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { Icon, Label } from 'expo-router';
 import { useTheme } from '../../src/theme/ThemeProvider';
+import { useT } from '../../src/i18n';
 
 export default function TabLayout() {
   const t = useTheme();
+  const tr = useT();
 
   return (
     <NativeTabs minimizeBehavior="onScrollDown" tintColor={t.colors.accent}>
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: 'sun.max', selected: 'sun.max.fill' }} md="wb_sunny" />
-        <Label>Today</Label>
+        <Label>{tr('tabs.today')}</Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="timeline">
         <Icon sf={{ default: 'book.closed', selected: 'book.closed.fill' }} md="menu_book" />
-        <Label>Timeline</Label>
+        <Label>{tr('tabs.timeline')}</Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="insights">
         <Icon sf="chart.line.uptrend.xyaxis" md="insights" />
-        <Label>Insights</Label>
+        <Label>{tr('tabs.insights')}</Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="you">
@@ -47,7 +49,7 @@ export default function TabLayout() {
           sf={{ default: 'person.crop.circle', selected: 'person.crop.circle.fill' }}
           md="account_circle"
         />
-        <Label>You</Label>
+        <Label>{tr('tabs.you')}</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );

@@ -25,6 +25,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { purchases, PURCHASES_IS_LIVE, type Plan } from '../lib/purchases';
+import { translate } from '../i18n';
 
 type Status = 'idle' | 'loading' | 'purchasing' | 'restoring';
 
@@ -98,7 +99,7 @@ export const useSubscription = create<SubState>()(
             purchases.addStatusListener(({ isPremium }) => set({ isPremium }));
           }
         } catch (e: any) {
-          set({ status: 'idle', error: e?.message ?? 'Could not load plans', initialized: true });
+          set({ status: 'idle', error: e?.message ?? translate('errors.loadPlans'), initialized: true });
         }
       },
 
@@ -116,7 +117,7 @@ export const useSubscription = create<SubState>()(
             status: 'idle',
           }));
         } catch (e: any) {
-          set({ status: 'idle', error: e?.message ?? 'Could not load plans' });
+          set({ status: 'idle', error: e?.message ?? translate('errors.loadPlans') });
         }
       },
 
@@ -134,7 +135,7 @@ export const useSubscription = create<SubState>()(
           return isPremium;
         } catch (e: any) {
           const cancelled = e?.userCancelled === true || /cancel/i.test(e?.message ?? '');
-          set({ status: 'idle', error: cancelled ? null : e?.message ?? 'Purchase failed' });
+          set({ status: 'idle', error: cancelled ? null : e?.message ?? translate('errors.purchaseFailed') });
           return false;
         }
       },
@@ -146,7 +147,7 @@ export const useSubscription = create<SubState>()(
           set({ isPremium, status: 'idle' });
           return isPremium;
         } catch (e: any) {
-          set({ status: 'idle', error: e?.message ?? 'Restore failed' });
+          set({ status: 'idle', error: e?.message ?? translate('errors.restoreFailed') });
           return false;
         }
       },

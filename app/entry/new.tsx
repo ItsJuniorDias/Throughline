@@ -21,9 +21,10 @@ import { useJournal } from '../../src/data/store';
 import { useInsights } from '../../src/data/insights';
 import { promptById } from '../../src/constants/prompts';
 import { themeFrequency } from '../../src/data/store';
-import { containsCrisisLanguage, CRISIS_SUPPORT } from '../../src/lib/safety';
+import { containsCrisisLanguage, crisisSupport } from '../../src/lib/safety';
 import { haptics } from '../../src/lib/haptics';
 import { useTheme } from '../../src/theme/ThemeProvider';
+import { useT, useTList } from '../../src/i18n';
 import { Text } from '../../src/components/ui/Text';
 import { Button } from '../../src/components/ui/Button';
 import { Chip } from '../../src/components/ui/Chip';
@@ -31,10 +32,10 @@ import { Icon } from '../../src/components/ui/Divider';
 import { MoodPicker } from '../../src/components/journal';
 import type { Mood } from '../../src/data/types';
 
-const DEFAULT_TAGS = ['work', 'family', 'friends', 'health', 'focus', 'tired', 'win', 'morning'];
-
 export default function ComposeScreen() {
   const t = useTheme();
+  const tr = useT();
+  const trList = useTList();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ promptId?: string; mood?: string }>();
@@ -49,13 +50,14 @@ export default function ComposeScreen() {
   const [tags, setTags] = useState<string[]>([]);
   const [draftTag, setDraftTag] = useState('');
 
+  const defaultTags = trList('compose.defaultTags');
   const suggested = useMemo(() => {
     const used = themeFrequency(entries)
       .slice(0, 6)
       .map((x) => x.tag);
-    const merged = [...new Set([...used, ...DEFAULT_TAGS])].slice(0, 10);
+    const merged = [...new Set([...used, ...defaultTags])].slice(0, 10);
     return merged;
-  }, [entries]);
+  }, [entries, defaultTags]);
 
   const canSave = mood != null && text.trim().length > 0;
 
@@ -75,8 +77,9 @@ export default function ComposeScreen() {
     // generate this note's insight in the background (per-note)
     useInsights.getState().generateEntry(entry);
     if (containsCrisisLanguage(text)) {
-      Alert.alert(CRISIS_SUPPORT.title, CRISIS_SUPPORT.message, [
-        { text: 'Okay', onPress: () => router.back() },
+      const support = crisisSupport();
+      Alert.alert(support.title, support.message, [
+        { text: tr('common.okay'), onPress: () => router.back() },
       ]);
     } else {
       router.back();
@@ -98,13 +101,13 @@ export default function ComposeScreen() {
       >
         <Pressable onPress={() => router.back()} hitSlop={10}>
           <Text variant="label" color="textSecondary">
-            Cancel
+            {tr('common.cancel')}
           </Text>
         </Pressable>
-        <Text variant="subheading">New entry</Text>
+        <Text variant="subheading">{tr('compose.title')}</Text>
         <Pressable onPress={save} disabled={!canSave} hitSlop={10}>
           <Text variant="label" color={canSave ? 'accentText' : 'textMuted'}>
-            Save
+            {tr('common.save')}
           </Text>
         </Pressable>
       </View>
@@ -134,7 +137,7 @@ export default function ComposeScreen() {
               }}
             >
               <Text variant="overline" color="accentText">
-                Responding to
+                {tr('compose.respondingTo')}
               </Text>
               <Text variant="serifQuote" color="textSecondary">
                 {prompt.text}
@@ -145,7 +148,7 @@ export default function ComposeScreen() {
           {/* mood */}
           <View style={{ gap: t.space[3] }}>
             <Text variant="overline" color="textMuted">
-              How did today feel?
+              {tr('compose.moodLabel')}
             </Text>
             <MoodPicker value={mood} onChange={setMood} />
           </View>
@@ -153,12 +156,12 @@ export default function ComposeScreen() {
           {/* prose */}
           <View style={{ gap: t.space[2] }}>
             <Text variant="overline" color="textMuted">
-              Your entry
+              {tr('compose.entryLabel')}
             </Text>
             <TextInput
               value={text}
               onChangeText={setText}
-              placeholder="Write freely…"
+              placeholder={tr('compose.entryPlaceholder')}
               placeholderTextColor={t.colors.textMuted}
               multiline
               autoFocus
@@ -177,7 +180,7 @@ export default function ComposeScreen() {
           {/* tags */}
           <View style={{ gap: t.space[3] }}>
             <Text variant="overline" color="textMuted">
-              Tags
+              {tr('compose.tagsLabel')}
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {[...new Set([...tags, ...suggested])].map((tag) => (
@@ -207,7 +210,7 @@ export default function ComposeScreen() {
               <TextInput
                 value={draftTag}
                 onChangeText={setDraftTag}
-                placeholder="Add a tag"
+                placeholder={tr('compose.addTag')}
                 placeholderTextColor={t.colors.textMuted}
                 onSubmitEditing={addDraftTag}
                 returnKeyType="done"
@@ -228,7 +231,7 @@ export default function ComposeScreen() {
             </View>
           </View>
 
-          <Button label="Save entry" size="lg" fullWidth disabled={!canSave} onPress={save} />
+          <Button label={tr('compose.saveEntry')} size="lg" fullWidth disabled={!canSave} onPress={save} />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

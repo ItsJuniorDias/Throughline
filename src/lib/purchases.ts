@@ -17,16 +17,23 @@
  */
 
 import { Platform } from "react-native";
+import { translate } from "../i18n";
 
 export interface Plan {
   id: string; // the RevenueCat package identifier (e.g. "$rc_annual")
   title: string; // "Annual" | "Monthly" | …
   priceString: string; // localized, e.g. "$39.99"
   period: string; // "year" | "month" | "week" | …
-  perMonthString?: string; // e.g. "$3.33 / mo" (shown on longer plans)
+  perMonthString?: string; // e.g. "$3.33 / mo" (English fallback; prefer perMonthPrice)
+  perMonthPrice?: string; // raw localized per-month price, e.g. "$3.33" (UI adds "/ mo")
   trialDays?: number; // free-trial length in days, if any
-  badge?: string; // e.g. "Best value"
+  badge?: string; // e.g. "Best value" (English fallback; prefer badgeKey)
   savingsPct?: number; // annual vs monthly savings, if computable
+  // Stable i18n keys so the paywall can localize live on a language switch
+  // (the resolved strings above are kept only as fallbacks / for non-React use).
+  titleKey?: string;
+  periodKey?: string;
+  badgeKey?: string;
 }
 
 export interface CustomerStatus {
@@ -133,6 +140,55 @@ function packagePeriod(pkg: any): string {
   }
 }
 
+/** i18n key for a package's title (resolved in the paywall). */
+function packageTitleKey(pkg: any): string {
+  switch (pkg.packageType) {
+    case "ANNUAL":
+      return "plans.annual";
+    case "SIX_MONTH":
+      return "plans.sixMonth";
+    case "THREE_MONTH":
+      return "plans.threeMonth";
+    case "TWO_MONTH":
+      return "plans.twoMonth";
+    case "MONTHLY":
+      return "plans.monthly";
+    case "WEEKLY":
+      return "plans.weekly";
+    case "LIFETIME":
+      return "plans.lifetime";
+    default:
+      return "plans.subscription";
+  }
+}
+
+/** i18n key for a package's billing period (resolved in the paywall). */
+function packagePeriodKey(pkg: any): string {
+  switch (pkg.packageType) {
+    case "ANNUAL":
+      return "plans.periodYear";
+    case "SIX_MONTH":
+      return "plans.periodSixMonth";
+    case "THREE_MONTH":
+      return "plans.periodThreeMonth";
+    case "TWO_MONTH":
+      return "plans.periodTwoMonth";
+    case "MONTHLY":
+      return "plans.periodMonth";
+    case "WEEKLY":
+      return "plans.periodWeek";
+    case "LIFETIME":
+      return "plans.periodLifetime";
+    default: {
+      const pr = pkg.product?.subscriptionPeriod;
+      if (pr === "P1Y") return "plans.periodYear";
+      if (pr === "P1M") return "plans.periodMonth";
+      if (pr === "P1W") return "plans.periodWeek";
+      return "plans.periodMonth";
+    }
+  }
+}
+
 function isLongerThanMonth(pkg: any): boolean {
   return (
     LONGER_THAN_MONTH.includes(pkg.packageType) ||
@@ -192,14 +248,18 @@ export function buildPlans(pkgs: any[]): Plan[] {
     return {
       id: pkg.identifier,
       title: packageTitle(pkg),
+      titleKey: packageTitleKey(pkg),
       priceString: product.priceString ?? "",
       period: packagePeriod(pkg),
+      periodKey: packagePeriodKey(pkg),
       perMonthString:
         longer && product.pricePerMonthString
           ? `${product.pricePerMonthString} / mo`
           : undefined,
+      perMonthPrice: longer ? product.pricePerMonthString ?? undefined : undefined,
       trialDays: trialDays(product),
       badge: pkg.packageType === "ANNUAL" ? "Best value" : undefined,
+      badgeKey: pkg.packageType === "ANNUAL" ? "plans.bestValue" : undefined,
       savingsPct,
     };
   });
@@ -248,7 +308,7 @@ const revenueCatProvider: PurchasesProvider = {
         (p: any) => p.identifier === planId || p.product?.identifier === planId,
       );
     }
-    if (!pkg) throw new Error("This plan isn’t available right now.");
+    if (!pkg) throw new Error(translate("errors.planUnavailable"));
     const { customerInfo } = await Purchases.purchasePackage(pkg);
     return { isPremium: hasEntitlement(customerInfo) };
   },
@@ -285,18 +345,24 @@ const MOCK_PLANS: Plan[] = [
   {
     id: "throughline_annual",
     title: "Annual",
+    titleKey: "plans.annual",
     priceString: "$39.99",
     period: "year",
+    periodKey: "plans.periodYear",
     perMonthString: "$3.33 / mo",
+    perMonthPrice: "$3.33",
     trialDays: 7,
     badge: "Best value",
+    badgeKey: "plans.bestValue",
     savingsPct: 33,
   },
   {
     id: "throughline_monthly",
     title: "Monthly",
+    titleKey: "plans.monthly",
     priceString: "$4.99",
     period: "month",
+    periodKey: "plans.periodMonth",
     trialDays: 7,
   },
 ];

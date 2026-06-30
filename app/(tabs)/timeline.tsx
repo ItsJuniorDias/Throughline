@@ -10,6 +10,7 @@ import { ScrollView, View } from "react-native";
 import { useRouter } from "expo-router";
 import { useJournal, themeFrequency } from "../../src/data/store";
 import { useTheme } from "../../src/theme/ThemeProvider";
+import { useT } from "../../src/i18n";
 import { ScreenScrollView } from "../../src/components/ui/ScreenScrollView";
 import { Text } from "../../src/components/ui/Text";
 import { Button } from "../../src/components/ui/Button";
@@ -19,6 +20,7 @@ import { EntryCard, SectionHeader } from "../../src/components/journal";
 
 export default function TimelineScreen() {
   const t = useTheme();
+  const tr = useT();
   const router = useRouter();
   const entries = useJournal((s) => s.entries);
   const [filter, setFilter] = useState<string | null>(null);
@@ -32,7 +34,10 @@ export default function TimelineScreen() {
   return (
     <ScreenScrollView contentStyle={{ gap: t.space[5] }}>
       <View style={{ marginTop: t.space[2] }}>
-        <SectionHeader eyebrow={`${entries.length} entries`} title="Timeline" />
+        <SectionHeader
+          eyebrow={tr('timeline.entriesEyebrow', { count: entries.length })}
+          title={tr('timeline.title')}
+        />
       </View>
 
       {/* theme filter */}
@@ -44,7 +49,7 @@ export default function TimelineScreen() {
           style={{ marginHorizontal: -t.gutter, paddingHorizontal: t.gutter }}
         >
           <Chip
-            label="All"
+            label={tr('timeline.all')}
             selected={filter === null}
             onPress={() => setFilter(null)}
           />
@@ -83,18 +88,18 @@ export default function TimelineScreen() {
           <Icon name="feather" size={28} colorKey="textMuted" />
           <Text variant="serifBody" color="textSecondary" align="center">
             {filter
-              ? `No entries tagged “${filter}”.`
-              : "Your timeline starts with one entry."}
+              ? tr('timeline.emptyFiltered', { tag: filter })
+              : tr('timeline.empty')}
           </Text>
           {!filter ? (
             <Button
-              label="Write the first one"
+              label={tr('timeline.writeFirst')}
               onPress={() => router.push("/entry/new")}
               fullWidth
             />
           ) : (
             <Button
-              label="Clear filter"
+              label={tr('timeline.clearFilter')}
               variant="ghost"
               onPress={() => setFilter(null)}
             />

@@ -21,8 +21,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Entry } from './types';
 import { useJournal } from './store';
 import { dayKey, daysBetween, relativeDay, shortDate } from '../lib/date';
-import { containsCrisisLanguage, CRISIS_SUPPORT } from '../lib/safety';
+import { containsCrisisLanguage, crisisSupport } from '../lib/safety';
 import { isConfigured } from '../lib/openrouter';
+import { translate } from '../i18n';
 import {
   generateWeeklyObservation,
   generateDailyReport,
@@ -110,7 +111,8 @@ function resolveDailyTarget(entries: Entry[]):
   };
 }
 
-const NO_KEY_MSG = 'Add your OpenRouter key to .env to generate insights.';
+/** Localized 'add your key' message (resolved at call time). */
+const noKeyMsg = () => translate('errors.noKey');
 
 export const useInsights = create<InsightsState>()(
   persist(
@@ -137,7 +139,7 @@ export const useInsights = create<InsightsState>()(
 
         if (containsCrisisLanguage(win.map((e) => e.text).join(' '))) {
           set({
-            weekly: { text: CRISIS_SUPPORT.message, crisis: true },
+            weekly: { text: crisisSupport().message, crisis: true },
             weeklySig: sig,
             weeklyStatus: 'idle',
             weeklyError: null,
@@ -145,7 +147,7 @@ export const useInsights = create<InsightsState>()(
           return;
         }
         if (!isConfigured()) {
-          set({ weeklyStatus: 'error', weeklyError: NO_KEY_MSG });
+          set({ weeklyStatus: 'error', weeklyError: noKeyMsg() });
           return;
         }
 
@@ -154,7 +156,7 @@ export const useInsights = create<InsightsState>()(
           const text = await generateWeeklyObservation(win);
           set({ weekly: { text, crisis: false }, weeklySig: sig, weeklyStatus: 'idle' });
         } catch (e: any) {
-          set({ weeklyStatus: 'error', weeklyError: e?.message ?? 'Could not generate the read.' });
+          set({ weeklyStatus: 'error', weeklyError: e?.message ?? translate('errors.generateRead') });
         }
       },
 
@@ -169,8 +171,8 @@ export const useInsights = create<InsightsState>()(
           set({
             daily: {
               data: {
-                title: 'A heavy day',
-                read: CRISIS_SUPPORT.message,
+                title: translate('crisis.heavyDay'),
+                read: crisisSupport().message,
                 closing: '',
               },
               crisis: true,
@@ -183,17 +185,19 @@ export const useInsights = create<InsightsState>()(
           return;
         }
         if (!isConfigured()) {
-          set({ dailyStatus: 'error', dailyError: NO_KEY_MSG });
+          set({ dailyStatus: 'error', dailyError: noKeyMsg() });
           return;
         }
 
-        const dateLabel = label === 'Today' ? 'today' : shortDate(day[0].createdAt);
+        // `label` is now localized, so compare day keys instead of an English literal.
+        const isToday = dayKey(day[0].createdAt) === dayKey(new Date());
+        const dateLabel = isToday ? translate('date.today') : shortDate(day[0].createdAt);
         set({ dailyStatus: 'loading', dailyError: null });
         try {
           const data = await generateDailyReport(day, context, dateLabel);
           set({ daily: { data, crisis: false, dayLabel: label }, dailySig: sig, dailyStatus: 'idle' });
         } catch (e: any) {
-          set({ dailyStatus: 'error', dailyError: e?.message ?? 'Could not generate the read.' });
+          set({ dailyStatus: 'error', dailyError: e?.message ?? translate('errors.generateRead') });
         }
       },
 
@@ -205,7 +209,7 @@ export const useInsights = create<InsightsState>()(
 
         // crisis guard — never send self-harm content to the model
         if (containsCrisisLanguage(entry.text)) {
-          useJournal.getState().setSummary(entry.id, { reflection: CRISIS_SUPPORT.message });
+          useJournal.getState().setSummary(entry.id, { reflection: crisisSupport().message });
           set((s) => ({
             entryStatus: { ...s.entryStatus, [entry.id]: 'idle' },
             entryError: { ...s.entryError, [entry.id]: undefined },
@@ -215,7 +219,7 @@ export const useInsights = create<InsightsState>()(
         if (!isConfigured()) {
           set((s) => ({
             entryStatus: { ...s.entryStatus, [entry.id]: 'error' },
-            entryError: { ...s.entryError, [entry.id]: NO_KEY_MSG },
+            entryError: { ...s.entryError, [entry.id]: noKeyMsg() },
           }));
           return;
         }

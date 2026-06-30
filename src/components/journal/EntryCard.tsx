@@ -10,6 +10,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { haptics } from '../../lib/haptics';
 import { relativeDay, clockTime } from '../../lib/date';
 import { moodMeta } from '../../lib/mood';
+import { useT } from '../../i18n';
 import { Text } from '../ui/Text';
 import { Chip } from '../ui/Chip';
 import { ThroughlineGutter } from './Throughline';
@@ -26,6 +27,7 @@ export interface EntryCardProps {
 
 export function EntryCard({ entry, isFirst, isLast, onPress, expanded }: EntryCardProps) {
   const t = useTheme();
+  const tr = useT();
   const mood = moodMeta(entry.mood);
 
   return (
@@ -62,7 +64,7 @@ export function EntryCard({ entry, isFirst, isLast, onPress, expanded }: EntryCa
               style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: mood.color }}
             />
             <Text variant="caption" color="textMuted">
-              {mood.label}
+              {tr(`mood.${mood.key}`)}
             </Text>
           </View>
         </View>

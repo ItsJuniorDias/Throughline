@@ -26,7 +26,8 @@ import {
 import { usePremium } from '../../src/data/subscription';
 import { useInsights, WEEKLY_MIN, DAILY_MIN } from '../../src/data/insights';
 import { monthLabel, daysBetween, dayKey, relativeDay } from '../../src/lib/date';
-import { moodMeta } from '../../src/lib/mood';
+import { moodMeta, moodLabel } from '../../src/lib/mood';
+import { useT } from '../../src/i18n';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { ScreenScrollView } from '../../src/components/ui/ScreenScrollView';
 import { Text } from '../../src/components/ui/Text';
@@ -119,6 +120,7 @@ function WeeklyRead({
   onRetry: () => void;
 }) {
   const t = useTheme();
+  const tr = useT();
   const showSpinner = !text && (status === 'loading' || (enough && status !== 'error'));
 
   return (
@@ -134,18 +136,18 @@ function WeeklyRead({
       }}
     >
       <Text variant="overline" color="accentText">
-        This week’s read
+        {tr('insights.weeklyEyebrow')}
       </Text>
 
       {!enough ? (
         <Text variant="serifBody" color="textSecondary">
-          Write a few more times this week and your free weekly read will appear here.
+          {tr('insights.weeklyEmpty')}
         </Text>
       ) : showSpinner ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space[3] }}>
           <ActivityIndicator color={t.colors.accent} />
           <Text variant="body" color="textMuted">
-            Reading your week…
+            {tr('insights.weeklyReading')}
           </Text>
         </View>
       ) : text ? (
@@ -154,20 +156,20 @@ function WeeklyRead({
             {text}
           </Text>
           <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-            <Button label="Refresh" variant="ghost" size="sm" onPress={onRetry} />
+            <Button label={tr('common.refresh')} variant="ghost" size="sm" onPress={onRetry} />
           </View>
         </>
       ) : status === 'error' ? (
         <View style={{ gap: t.space[2] }}>
           <Text variant="body" color="textSecondary">
-            Couldn’t generate the read.
+            {tr('insights.weeklyError')}
           </Text>
           {error ? (
             <Text variant="caption" color="textMuted">
               {error}
             </Text>
           ) : null}
-          <Button label="Try again" variant="secondary" size="sm" onPress={onRetry} />
+          <Button label={tr('common.tryAgain')} variant="secondary" size="sm" onPress={onRetry} />
         </View>
       ) : null}
     </View>
@@ -189,23 +191,27 @@ function LifetimeCard({
   trend: ReturnType<typeof moodByDay>;
 }) {
   const t = useTheme();
+  const tr = useT();
   const avgMeta = avg != null ? moodMeta(Math.round(avg) as Mood) : null;
   return (
     <Card elevation="sm" style={{ gap: t.space[4] }}>
-      <SectionHeader eyebrow="All time" title="Your whole history" />
+      <SectionHeader eyebrow={tr('insights.lifetimeEyebrow')} title={tr('insights.lifetimeTitle')} />
       <View style={{ flexDirection: 'row', gap: t.space[3] }}>
-        <StatTile value={`${total}`} label="entries" />
-        <StatTile value={`${days}`} label="days written" />
-        <StatTile value={`${longest}`} label="longest streak" tint={t.colors.accentText} />
+        <StatTile value={`${total}`} label={tr('insights.lifetimeEntries')} />
+        <StatTile value={`${days}`} label={tr('insights.lifetimeDays')} />
+        <StatTile value={`${longest}`} label={tr('insights.lifetimeLongest')} tint={t.colors.accentText} />
       </View>
       <View style={{ gap: t.space[2] }}>
         <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
           <Text variant="overline" color="accentText">
-            Mood since you started
+            {tr('insights.lifetimeMood')}
           </Text>
           {avgMeta ? (
             <Text variant="mono" tint={avgMeta.color}>
-              avg {avg!.toFixed(1)} · {avgMeta.label.toLowerCase()}
+              {tr('insights.lifetimeAvg', {
+                value: avg!.toFixed(1),
+                mood: tr(`mood.${avgMeta.key}`).toLowerCase(),
+              })}
             </Text>
           ) : null}
         </View>
@@ -217,6 +223,7 @@ function LifetimeCard({
 
 export default function InsightsScreen() {
   const t = useTheme();
+  const tr = useT();
   const router = useRouter();
   const isPremium = usePremium();
   const entries = useJournal((s) => s.entries);
@@ -255,10 +262,12 @@ export default function InsightsScreen() {
     return {
       count: dayEntries.length,
       label: relativeDay(newest.createdAt),
-      avgLabel: moodMeta(Math.round(avg) as Mood).label,
+      avgLabel: moodLabel(Math.round(avg) as Mood),
       avgColor: moodMeta(Math.round(avg) as Mood).color,
     };
-  }, [entries]);
+    // `tr` in deps so the localized label/avgLabel refresh on a language switch
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entries, tr]);
 
   // premium pattern analytics (local, instant)
   const { lifts, drains } = useMemo(() => {
@@ -293,7 +302,7 @@ export default function InsightsScreen() {
   return (
     <ScreenScrollView contentStyle={{ gap: t.space[6] }}>
       <View style={{ marginTop: t.space[2] }}>
-        <SectionHeader eyebrow={monthLabel().toUpperCase()} title="Insights" />
+        <SectionHeader eyebrow={monthLabel().toUpperCase()} title={tr('insights.title')} />
       </View>
 
       {/* premium hero: the day's read (or the locked teaser for free) */}
@@ -303,7 +312,7 @@ export default function InsightsScreen() {
           status={dailyStatus}
           error={dailyError}
           onRetry={() => generateDaily(entries, true)}
-          dayLabel={daily?.dayLabel ?? dailyMeta?.label ?? 'Today'}
+          dayLabel={daily?.dayLabel ?? dailyMeta?.label ?? tr('date.today')}
           entriesToday={dailyMeta?.count ?? 0}
           avgLabel={dailyMeta?.avgLabel}
           avgColor={dailyMeta?.avgColor}
@@ -315,23 +324,27 @@ export default function InsightsScreen() {
       <View style={{ flexDirection: 'row', gap: t.space[3] }}>
         <StatTile
           value={avg30 != null ? avg30.toFixed(1) : '—'}
-          label={avgMeta ? `avg mood · ${avgMeta.label}` : 'avg mood · 30d'}
+          label={
+            avgMeta
+              ? tr('insights.avgMoodWith', { mood: tr(`mood.${avgMeta.key}`) })
+              : tr('insights.avgMood30')
+          }
           tint={avgMeta?.color}
         />
-        <StatTile value={`${writtenDays30}`} label="days written · 30d" />
-        <StatTile value={`${streak}`} label="day streak" tint={t.colors.accentText} />
+        <StatTile value={`${writtenDays30}`} label={tr('insights.daysWritten30')} />
+        <StatTile value={`${streak}`} label={tr('insights.dayStreak')} tint={t.colors.accentText} />
       </View>
 
       {/* mood trend (30d) */}
       <Card elevation="sm" style={{ gap: t.space[4] }}>
-        <SectionHeader eyebrow="Last 30 days" title="Mood over time" />
+        <SectionHeader eyebrow={tr('insights.trendEyebrow')} title={tr('insights.trendTitle')} />
         <MoodTrendChart data={month} />
       </Card>
 
       {/* recurring themes (30d) */}
       {themes.length > 0 ? (
         <Card elevation="sm" style={{ gap: t.space[4] }}>
-          <SectionHeader eyebrow="What you write about" title="Recurring themes" />
+          <SectionHeader eyebrow={tr('insights.themesEyebrow')} title={tr('insights.themesTitle')} />
           <ThemeBars entries={themes} />
         </Card>
       ) : null}
@@ -365,22 +378,22 @@ export default function InsightsScreen() {
       {!isPremium ? (
         <InsightCard
           locked
-          eyebrow="Throughline Premium"
-          title="Get the read for every day"
-          body="The daily writing is yours free. Premium turns it into the longitudinal picture you can’t see one day at a time — starting with your very first entry."
+          eyebrow={tr('upsell.eyebrow')}
+          title={tr('upsell.title')}
+          body={tr('upsell.body')}
           bullets={[
-            'Today’s read — the day pulled together, every day',
-            'Patterns — which themes lift you and which quietly weigh',
-            'All-time analytics across your whole history',
-            'Export everything as JSON',
+            tr('upsell.bullet1'),
+            tr('upsell.bullet2'),
+            tr('upsell.bullet3'),
+            tr('upsell.bullet4'),
           ]}
-          ctaLabel="Unlock Premium"
+          ctaLabel={tr('upsell.cta')}
           onUnlock={() => router.push('/paywall')}
         />
       ) : null}
 
       <Text variant="caption" color="textMuted" align="center">
-        Observations are reflections, not advice.
+        {tr('insights.disclaimer')}
       </Text>
     </ScreenScrollView>
   );

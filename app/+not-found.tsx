@@ -8,14 +8,16 @@ import { View } from 'react-native';
 import { Link, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../src/theme/ThemeProvider';
+import { useT } from '../src/i18n';
 import { Text } from '../src/components/ui/Text';
 
 export default function NotFound() {
   const t = useTheme();
+  const tr = useT();
   const insets = useSafeAreaInsets();
   return (
     <>
-      <Stack.Screen options={{ title: 'Not found' }} />
+      <Stack.Screen options={{ title: tr('notFound.stackTitle') }} />
       <View
         style={{
           flex: 1,
@@ -28,14 +30,14 @@ export default function NotFound() {
         }}
       >
         <Text variant="display" align="center">
-          Lost the thread
+          {tr('notFound.title')}
         </Text>
         <Text variant="body" color="textSecondary" align="center">
-          This page doesn’t exist.
+          {tr('notFound.body')}
         </Text>
         <Link href="/" style={{ marginTop: t.space[2] }}>
           <Text variant="label" color="accentText">
-            Back to Today
+            {tr('notFound.back')}
           </Text>
         </Link>
       </View>

@@ -12,6 +12,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { Text } from '../ui/Text';
 import { Icon } from '../ui/Divider';
 import type { MoodCorrelation } from '../../data/store';
+import { useT } from '../../i18n';
 
 function Row({ row, max, kind }: { row: MoodCorrelation; max: number; kind: 'lift' | 'drain' }) {
   const t = useTheme();
@@ -84,6 +85,7 @@ export interface CorrelationsCardProps {
 
 export function CorrelationsCard({ lifts, drains }: CorrelationsCardProps) {
   const t = useTheme();
+  const tr = useT();
   const max = Math.max(0.1, ...[...lifts, ...drains].map((r) => Math.abs(r.delta)));
 
   return (
@@ -101,10 +103,10 @@ export function CorrelationsCard({ lifts, drains }: CorrelationsCardProps) {
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <View style={{ gap: 4, flex: 1 }}>
           <Text variant="overline" color="accentText">
-            Patterns
+            {tr('correlations.eyebrow')}
           </Text>
           <Text variant="heading" color="text">
-            What moves your mood
+            {tr('correlations.title')}
           </Text>
         </View>
         <Icon name="git-merge" size={18} colorKey="accentText" />
@@ -112,15 +114,14 @@ export function CorrelationsCard({ lifts, drains }: CorrelationsCardProps) {
 
       {lifts.length === 0 && drains.length === 0 ? (
         <Text variant="serifBody" color="textSecondary">
-          Tag a few more entries and the themes that lift you — and the ones that quietly weigh —
-          will surface here.
+          {tr('correlations.empty')}
         </Text>
       ) : (
         <>
-          <Group icon="trending-up" title="Lifts you" rows={lifts} max={max} kind="lift" />
-          <Group icon="trending-down" title="Weighs on you" rows={drains} max={max} kind="drain" />
+          <Group icon="trending-up" title={tr('correlations.lifts')} rows={lifts} max={max} kind="lift" />
+          <Group icon="trending-down" title={tr('correlations.weighs')} rows={drains} max={max} kind="drain" />
           <Text variant="caption" color="textMuted">
-            Average mood with each theme vs. your overall average · sample size after the dot.
+            {tr('correlations.note')}
           </Text>
         </>
       )}

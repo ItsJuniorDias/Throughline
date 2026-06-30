@@ -8,6 +8,8 @@
  * and wire to localized resources for production.
  */
 
+import { translate } from '../i18n';
+
 const PATTERNS: RegExp[] = [
   /\bkill myself\b/i,
   /\bend my life\b/i,
@@ -22,8 +24,18 @@ export function containsCrisisLanguage(text: string): boolean {
   return PATTERNS.some((re) => re.test(text));
 }
 
-export const CRISIS_SUPPORT = {
-  title: 'You don’t have to carry this alone',
-  message:
-    'Some of what you wrote sounds heavy. If you’re going through something painful, please consider reaching out to a local crisis line or someone you trust — talking to a person can help. Your entry has been saved.',
-};
+export interface CrisisSupport {
+  title: string;
+  message: string;
+}
+
+/**
+ * Localized crisis-support copy for the current language. A getter (not a const)
+ * so it always reflects the active language at the moment it's shown.
+ */
+export function crisisSupport(): CrisisSupport {
+  return {
+    title: translate('crisis.title'),
+    message: translate('crisis.message'),
+  };
+}

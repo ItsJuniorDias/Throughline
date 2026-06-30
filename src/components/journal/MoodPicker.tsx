@@ -10,6 +10,7 @@ import { Animated, Pressable, View } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { haptics } from '../../lib/haptics';
 import { MOODS } from '../../lib/mood';
+import { useT } from '../../i18n';
 import { Text } from '../ui/Text';
 import type { Mood } from '../../data/types';
 
@@ -83,6 +84,7 @@ function MoodNode({
 }
 
 export function MoodPicker({ value, onChange, compact = false }: MoodPickerProps) {
+  const tr = useT();
   const selected = MOODS.find((m) => m.value === value);
 
   return (
@@ -93,7 +95,7 @@ export function MoodPicker({ value, onChange, compact = false }: MoodPickerProps
             key={m.value}
             selected={value === m.value}
             color={m.color}
-            accessibilityLabel={m.label}
+            accessibilityLabel={tr(`mood.${m.key}`)}
             onPress={() => {
               haptics.select();
               onChange(m.value);
@@ -105,11 +107,11 @@ export function MoodPicker({ value, onChange, compact = false }: MoodPickerProps
         <View style={{ height: 22, alignItems: 'center', justifyContent: 'center' }}>
           {selected ? (
             <Text variant="bodyStrong" tint={selected.color}>
-              {selected.label}
+              {tr(`mood.${selected.key}`)}
             </Text>
           ) : (
             <Text variant="callout" color="textMuted">
-              How did today feel?
+              {tr('mood.question')}
             </Text>
           )}
         </View>

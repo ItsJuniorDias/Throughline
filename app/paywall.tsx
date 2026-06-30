@@ -26,34 +26,16 @@ import { Text } from "../src/components/ui/Text";
 import { Button } from "../src/components/ui/Button";
 import { Icon, type IconName } from "../src/components/ui/Divider";
 import type { Plan } from "../src/lib/purchases";
+import { useT } from "../src/i18n";
 
 const TERMS_URL = "https://throughline.app/terms";
 const PRIVACY_URL = "https://throughline.app/privacy";
 
-const FEATURES: { icon: IconName; title: string; detail: string }[] = [
-  {
-    icon: "sunrise",
-    title: "A read for today",
-    detail:
-      "Every day you write, a frontier-model reflection on that day — ready the moment you subscribe, from your very first entry.",
-  },
-  {
-    icon: "git-merge",
-    title: "What lifts you, what drains you",
-    detail:
-      "Mood × theme correlations across your history — the patterns you can’t feel one day at a time.",
-  },
-  {
-    icon: "trending-up",
-    title: "All-time analytics",
-    detail:
-      "Your lifetime mood trend, longest streak, and the long arc — not just the last 30 days.",
-  },
-  {
-    icon: "download",
-    title: "Export everything",
-    detail: "Your full journal, yours to keep, any time.",
-  },
+const FEATURES: { icon: IconName; titleKey: string; detailKey: string }[] = [
+  { icon: "sunrise", titleKey: "paywall.feature1Title", detailKey: "paywall.feature1Detail" },
+  { icon: "git-merge", titleKey: "paywall.feature2Title", detailKey: "paywall.feature2Detail" },
+  { icon: "trending-up", titleKey: "paywall.feature3Title", detailKey: "paywall.feature3Detail" },
+  { icon: "download", titleKey: "paywall.feature4Title", detailKey: "paywall.feature4Detail" },
 ];
 
 function PlanCard({
@@ -66,6 +48,13 @@ function PlanCard({
   onPress: () => void;
 }) {
   const t = useTheme();
+  const tr = useT();
+  const title = plan.titleKey ? tr(plan.titleKey) : plan.title;
+  const period = plan.periodKey ? tr(plan.periodKey) : plan.period;
+  const badge = plan.badgeKey ? tr(plan.badgeKey) : plan.badge;
+  const perMonth = plan.perMonthPrice
+    ? tr("paywall.perMonth", { price: plan.perMonthPrice })
+    : plan.perMonthString;
 
   return (
     <Pressable
@@ -113,9 +102,9 @@ function PlanCard({
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Text variant="subheading" color="text">
-            {plan.title}
+            {title}
           </Text>
-          {plan.badge ? (
+          {badge ? (
             <View
               style={{
                 paddingHorizontal: 8,
@@ -125,16 +114,16 @@ function PlanCard({
               }}
             >
               <Text variant="mono" tint={t.colors.textOnAccent}>
-                {plan.badge.toUpperCase()}
+                {badge.toUpperCase()}
               </Text>
             </View>
           ) : null}
         </View>
 
-        {plan.perMonthString ? (
+        {perMonth ? (
           <Text variant="caption" color="textMuted" style={{ marginTop: 2 }}>
-            {plan.perMonthString}
-            {plan.savingsPct ? ` · save ${plan.savingsPct}%` : ""}
+            {perMonth}
+            {plan.savingsPct ? ` · ${tr("paywall.save", { pct: plan.savingsPct })}` : ""}
           </Text>
         ) : null}
       </View>
@@ -144,7 +133,7 @@ function PlanCard({
           {plan.priceString}
         </Text>
         <Text variant="caption" color="textMuted">
-          / {plan.period}
+          {`/ ${period}`}
         </Text>
       </View>
     </Pressable>
@@ -159,6 +148,7 @@ function MemberView({
   onDone: () => void;
 }) {
   const t = useTheme();
+  const tr = useT();
   const insets = useSafeAreaInsets();
 
   const manage = () => {
@@ -203,21 +193,19 @@ function MemberView({
 
       <View style={{ alignItems: "center", gap: t.space[2] }}>
         <Text variant="display" align="center">
-          {celebrate ? "You’re all set" : "You’re a member"}
+          {celebrate ? tr("paywall.memberAllSetTitle") : tr("paywall.memberTitle")}
         </Text>
         <Text variant="body" color="textSecondary" align="center">
-          {celebrate
-            ? "Welcome to Throughline Premium. Your read for today is ready in Insights."
-            : "Throughline Premium is active on this account. Thank you for supporting the work."}
+          {celebrate ? tr("paywall.memberAllSetBody") : tr("paywall.memberBody")}
         </Text>
       </View>
 
       <View
         style={{ alignSelf: "stretch", gap: t.space[3], marginTop: t.space[4] }}
       >
-        <Button label="Done" size="lg" fullWidth onPress={onDone} />
+        <Button label={tr("common.done")} size="lg" fullWidth onPress={onDone} />
         <Button
-          label="Manage subscription"
+          label={tr("you.manage")}
           variant="ghost"
           fullWidth
           onPress={manage}
@@ -229,6 +217,7 @@ function MemberView({
 
 export default function Paywall() {
   const t = useTheme();
+  const tr = useT();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const {
@@ -256,6 +245,7 @@ export default function Paywall() {
   };
 
   const selected = plans.find((p) => p.id === selectedPlanId) ?? plans[0];
+  const selectedPeriod = selected?.periodKey ? tr(selected.periodKey) : selected?.period ?? "";
   const loading = status === "loading";
   const purchasing = status === "purchasing";
   const restoring = status === "restoring";
@@ -275,8 +265,8 @@ export default function Paywall() {
       setJustPurchased(true);
     } else {
       Alert.alert(
-        "Nothing to restore",
-        "We couldn’t find a previous purchase on this account.",
+        tr("settings.nothingRestoreTitle"),
+        tr("settings.nothingRestoreBody"),
       );
     }
   };
@@ -286,13 +276,17 @@ export default function Paywall() {
   }
 
   const ctaLabel = selected?.trialDays
-    ? `Start ${selected.trialDays}-day free trial`
-    : "Subscribe";
+    ? tr("paywall.startTrial", { days: selected.trialDays })
+    : tr("paywall.subscribe");
 
   const trialNote = selected
     ? selected.trialDays
-      ? `${selected.trialDays} days free, then ${selected.priceString} / ${selected.period}. Cancel anytime.`
-      : `${selected.priceString} / ${selected.period}. Cancel anytime.`
+      ? tr("paywall.trialNote", {
+          days: selected.trialDays,
+          price: selected.priceString,
+          period: selectedPeriod,
+        })
+      : tr("paywall.noTrialNote", { price: selected.priceString, period: selectedPeriod })
     : "";
 
   return (
@@ -318,7 +312,7 @@ export default function Paywall() {
             variant="label"
             color={restoring ? "textMuted" : "textSecondary"}
           >
-            {restoring ? "Restoring…" : "Restore"}
+            {restoring ? tr("paywall.restoring") : tr("paywall.restore")}
           </Text>
         </Pressable>
       </View>
@@ -355,15 +349,13 @@ export default function Paywall() {
           </View>
           <View style={{ gap: t.space[2], alignItems: "center" }}>
             <Text variant="overline" color="accentText">
-              Throughline Premium
+              {tr("paywall.eyebrow")}
             </Text>
             <Text variant="display" align="center">
-              A read every day, not once a month
+              {tr("paywall.heroTitle")}
             </Text>
             <Text variant="body" color="textSecondary" align="center">
-              The writing is yours free. Premium reads each day back to you —
-              starting with your very first entry, so it’s there the moment you
-              subscribe.
+              {tr("paywall.heroBody")}
             </Text>
           </View>
         </View>
@@ -372,7 +364,7 @@ export default function Paywall() {
         <View style={{ gap: t.space[4] }}>
           {FEATURES.map((f) => (
             <View
-              key={f.title}
+              key={f.titleKey}
               style={{ flexDirection: "row", gap: t.space[3] }}
             >
               <View
@@ -389,10 +381,10 @@ export default function Paywall() {
               </View>
               <View style={{ flex: 1, gap: 2 }}>
                 <Text variant="bodyStrong" color="text">
-                  {f.title}
+                  {tr(f.titleKey)}
                 </Text>
                 <Text variant="callout" color="textSecondary">
-                  {f.detail}
+                  {tr(f.detailKey)}
                 </Text>
               </View>
             </View>
@@ -403,7 +395,7 @@ export default function Paywall() {
         <View style={{ gap: t.space[3] }}>
           {loading ? (
             <Text variant="callout" color="textMuted" align="center">
-              Loading plans…
+              {tr("paywall.loadingPlans")}
             </Text>
           ) : plans.length > 0 ? (
             plans.map((p) => (
@@ -423,10 +415,10 @@ export default function Paywall() {
               }}
             >
               <Text variant="callout" color="textMuted" align="center">
-                Plans aren’t available right now.
+                {tr("paywall.noPlans")}
               </Text>
               <Button
-                label="Try again"
+                label={tr("common.tryAgain")}
                 variant="secondary"
                 size="sm"
                 onPress={reloadPlans}
@@ -470,9 +462,7 @@ export default function Paywall() {
             align="center"
             style={{ lineHeight: 16 }}
           >
-            Payment is charged to your store account at confirmation.
-            Subscriptions auto-renew unless cancelled at least 24 hours before
-            the period ends.
+            {tr("paywall.disclosure")}
           </Text>
           <View
             style={{
@@ -486,7 +476,7 @@ export default function Paywall() {
               hitSlop={8}
             >
               <Text variant="caption" color="textSecondary">
-                Terms
+                {tr("paywall.terms")}
               </Text>
             </Pressable>
             <Pressable
@@ -494,7 +484,7 @@ export default function Paywall() {
               hitSlop={8}
             >
               <Text variant="caption" color="textSecondary">
-                Privacy
+                {tr("paywall.privacy")}
               </Text>
             </Pressable>
           </View>

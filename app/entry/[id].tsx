@@ -13,6 +13,7 @@ import { promptById } from '../../src/constants/prompts';
 import { shortDate, clockTime } from '../../src/lib/date';
 import { moodMeta } from '../../src/lib/mood';
 import { useTheme } from '../../src/theme/ThemeProvider';
+import { useT } from '../../src/i18n';
 import { Text } from '../../src/components/ui/Text';
 import { Button } from '../../src/components/ui/Button';
 import { Chip } from '../../src/components/ui/Chip';
@@ -21,6 +22,7 @@ import { haptics } from '../../src/lib/haptics';
 
 export default function EntryDetailScreen() {
   const t = useTheme();
+  const tr = useT();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -44,10 +46,10 @@ export default function EntryDetailScreen() {
   }, [entry?.id]);
 
   const confirmDelete = () =>
-    Alert.alert('Delete entry?', 'This can’t be undone.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(tr('entry.deleteTitle'), tr('entry.deleteBody'), [
+      { text: tr('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete',
+        text: tr('common.delete'),
         style: 'destructive',
         onPress: () => {
           haptics.warning();
@@ -82,7 +84,7 @@ export default function EntryDetailScreen() {
       {!entry ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: t.space[3] }}>
           <Text variant="serifBody" color="textSecondary">
-            This entry is no longer here.
+            {tr('entry.gone')}
           </Text>
         </View>
       ) : (
@@ -104,7 +106,7 @@ export default function EntryDetailScreen() {
                 style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: mood!.color }}
               />
               <Text variant="title" tint={mood!.color}>
-                {mood!.label}
+                {tr(`mood.${mood!.key}`)}
               </Text>
             </View>
           </View>
@@ -120,7 +122,7 @@ export default function EntryDetailScreen() {
               }}
             >
               <Text variant="overline" color="accentText">
-                In response to
+                {tr('entry.inResponseTo')}
               </Text>
               <Text variant="serifQuote" color="textSecondary">
                 {prompt.text}
@@ -153,7 +155,7 @@ export default function EntryDetailScreen() {
               }}
             >
               <Text variant="overline" color="accentText">
-                Insight
+                {tr('entry.insight')}
               </Text>
               {reflection && insightStatus !== 'loading' ? (
                 <Pressable onPress={() => entry && generateEntry(entry, true)} hitSlop={8}>
@@ -172,7 +174,7 @@ export default function EntryDetailScreen() {
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space[3] }}>
                 <ActivityIndicator color={t.colors.accent} />
                 <Text variant="body" color="textMuted">
-                  Reading this entry…
+                  {tr('entry.reading')}
                 </Text>
               </View>
             ) : reflection ? (
@@ -182,7 +184,7 @@ export default function EntryDetailScreen() {
             ) : insightStatus === 'error' ? (
               <View style={{ gap: t.space[2] }}>
                 <Text variant="body" color="textSecondary">
-                  Couldn’t generate an insight.
+                  {tr('entry.insightError')}
                 </Text>
                 {insightError ? (
                   <Text variant="caption" color="textMuted">
@@ -190,7 +192,7 @@ export default function EntryDetailScreen() {
                   </Text>
                 ) : null}
                 <Button
-                  label="Try again"
+                  label={tr('common.tryAgain')}
                   variant="secondary"
                   size="sm"
                   onPress={() => entry && generateEntry(entry, true)}
@@ -199,7 +201,7 @@ export default function EntryDetailScreen() {
             ) : null}
 
             <Text variant="caption" color="textMuted">
-              A reflection, not advice.
+              {tr('entry.reflectionNote')}
             </Text>
           </View>
 

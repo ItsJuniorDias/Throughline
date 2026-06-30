@@ -10,6 +10,7 @@ import { useTheme } from "../../theme/ThemeProvider";
 import { haptics } from "../../lib/haptics";
 import { Text } from "../ui/Text";
 import { Icon } from "../ui/Divider";
+import { useT } from "../../i18n";
 
 export interface PromptCardProps {
   prompt: string;
@@ -18,6 +19,7 @@ export interface PromptCardProps {
 
 export function PromptCard({ prompt, onPress }: PromptCardProps) {
   const t = useTheme();
+  const tr = useT();
 
   return (
     <Pressable
@@ -48,7 +50,7 @@ export function PromptCard({ prompt, onPress }: PromptCardProps) {
       />
       <View style={{ padding: t.space[5], gap: 14 }}>
         <Text variant="overline" color="accentText">
-          Prompt for today
+          {tr("prompt.eyebrow")}
         </Text>
 
         <Text variant="serifQuote" color="text">
@@ -57,7 +59,7 @@ export function PromptCard({ prompt, onPress }: PromptCardProps) {
 
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <Text variant="label" color="accentText">
-            Write on this
+            {tr("prompt.cta")}
           </Text>
           <Icon name="arrow-right" size={16} colorKey="accentText" />
         </View>

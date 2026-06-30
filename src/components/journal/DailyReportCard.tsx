@@ -17,6 +17,7 @@ import { Text } from '../ui/Text';
 import { Button } from '../ui/Button';
 import { Icon } from '../ui/Divider';
 import type { DailyReport } from '../../data/insights';
+import { useT } from '../../i18n';
 
 function Seam() {
   const t = useTheme();
@@ -71,6 +72,7 @@ export function DailyReportCard({
   enoughData,
 }: DailyReportCardProps) {
   const t = useTheme();
+  const tr = useT();
   // spinner only while there's nothing to show yet (keep an existing read
   // visible during a forced regenerate)
   const showSpinner = !report && (status === 'loading' || (enoughData && status !== 'error'));
@@ -98,12 +100,12 @@ export function DailyReportCard({
         }}
       >
         <Text variant="overline" color="accentText">
-          {dayLabel.toUpperCase()} · TODAY’S READ
+          {`${dayLabel.toUpperCase()} · ${tr('daily.headerSuffix')}`}
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
           <Icon name="award" size={13} colorKey="accentText" />
           <Text variant="mono" color="accentText">
-            PREMIUM
+            {tr('daily.premium')}
           </Text>
         </View>
       </View>
@@ -113,7 +115,7 @@ export function DailyReportCard({
         {/* stats strip — real numbers under the narrative */}
         <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
           <Text variant="mono" color="textMuted">
-            {entriesToday} {entriesToday === 1 ? 'entry' : 'entries'} · {dayLabel.toLowerCase()}
+            {`${tr('daily.statsEntries', { count: entriesToday })} · ${dayLabel.toLowerCase()}`}
           </Text>
           {avgLabel ? (
             <Text variant="mono" tint={avgColor ?? t.colors.textMuted}>
@@ -124,8 +126,7 @@ export function DailyReportCard({
 
         {!enoughData ? (
           <Text variant="serifBody" color="textSecondary">
-            Write today and your read appears here — the day pulled together, and the line running
-            into it from the days before.
+            {tr('daily.empty')}
           </Text>
         ) : showSpinner ? (
           <View
@@ -138,7 +139,7 @@ export function DailyReportCard({
           >
             <ActivityIndicator color={t.colors.accent} />
             <Text variant="body" color="textMuted">
-              Reading your day…
+              {tr('daily.reading')}
             </Text>
           </View>
         ) : report ? (
@@ -154,7 +155,7 @@ export function DailyReportCard({
             ) : null}
 
             {report.throughline ? (
-              <Section label="The throughline">
+              <Section label={tr('daily.throughline')}>
                 <View
                   style={{
                     borderLeftWidth: 3,
@@ -170,7 +171,7 @@ export function DailyReportCard({
             ) : null}
 
             {report.focus ? (
-              <Section label="Worth sitting with">
+              <Section label={tr('daily.focus')}>
                 <Text variant="body" color="textSecondary">
                   {report.focus}
                 </Text>
@@ -192,22 +193,22 @@ export function DailyReportCard({
               }}
             >
               <Text variant="caption" color="textMuted" style={{ flex: 1 }}>
-                Generated from your entries · a reflection, not advice.
+                {tr('daily.generated')}
               </Text>
-              <Button label="Regenerate" variant="ghost" size="sm" onPress={onRetry} />
+              <Button label={tr('common.regenerate')} variant="ghost" size="sm" onPress={onRetry} />
             </View>
           </>
         ) : status === 'error' ? (
           <View style={{ gap: t.space[3] }}>
             <Text variant="body" color="textSecondary">
-              Couldn’t generate today’s read.
+              {tr('daily.error')}
             </Text>
             {error ? (
               <Text variant="caption" color="textMuted">
                 {error}
               </Text>
             ) : null}
-            <Button label="Try again" variant="secondary" size="sm" onPress={onRetry} />
+            <Button label={tr('common.tryAgain')} variant="secondary" size="sm" onPress={onRetry} />
           </View>
         ) : null}
       </View>

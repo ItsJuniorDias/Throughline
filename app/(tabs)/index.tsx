@@ -17,6 +17,7 @@ import { useInsights } from '../../src/data/insights';
 import { greeting, monthLabel, shortDate } from '../../src/lib/date';
 import { promptOfTheDay } from '../../src/constants/prompts';
 import { useTheme } from '../../src/theme/ThemeProvider';
+import { useT } from '../../src/i18n';
 import { ScreenScrollView } from '../../src/components/ui/ScreenScrollView';
 import { Text } from '../../src/components/ui/Text';
 import { Button } from '../../src/components/ui/Button';
@@ -45,6 +46,7 @@ function TodayReadPeek({
   onOpen: () => void;
 }) {
   const t = useTheme();
+  const tr = useT();
   return (
     <Pressable
       onPress={onOpen}
@@ -61,7 +63,7 @@ function TodayReadPeek({
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text variant="overline" color="accentText">
-          Today’s read
+          {tr('today.readEyebrow')}
         </Text>
         <Icon name="arrow-right" size={16} colorKey="accentText" />
       </View>
@@ -69,7 +71,7 @@ function TodayReadPeek({
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space[3] }}>
           <ActivityIndicator color={t.colors.accent} />
           <Text variant="body" color="textMuted">
-            Reading your day…
+            {tr('today.readingDay')}
           </Text>
         </View>
       ) : (
@@ -93,6 +95,7 @@ function TodayReadPeek({
 /** Free: an invitation to unlock the day's read. */
 function TodayReadLocked({ onUnlock }: { onUnlock: () => void }) {
   const t = useTheme();
+  const tr = useT();
   return (
     <Pressable
       onPress={onUnlock}
@@ -123,10 +126,10 @@ function TodayReadLocked({ onUnlock }: { onUnlock: () => void }) {
       </View>
       <View style={{ flex: 1, gap: 2 }}>
         <Text variant="bodyStrong" color="text">
-          Unlock today’s read
+          {tr('today.unlockTitle')}
         </Text>
         <Text variant="callout" color="textSecondary">
-          A read of your day — and the line into it — with Premium.
+          {tr('today.unlockBody')}
         </Text>
       </View>
       <Icon name="chevron-right" size={18} colorKey="textMuted" />
@@ -136,6 +139,7 @@ function TodayReadLocked({ onUnlock }: { onUnlock: () => void }) {
 
 export default function TodayScreen() {
   const t = useTheme();
+  const tr = useT();
   const router = useRouter();
   const entries = useJournal((s) => s.entries);
   const isPremium = usePremium();
@@ -188,7 +192,7 @@ export default function TodayScreen() {
         <Card padded={false} elevation="sm" style={{ paddingVertical: t.space[4], paddingHorizontal: t.space[2] }}>
           <View style={{ paddingHorizontal: t.space[3], marginBottom: t.space[1] }}>
             <Text variant="caption" color="textMuted">
-              YOUR THROUGHLINE · LAST 7 DAYS
+              {tr('today.weekStrand')}
             </Text>
           </View>
           <WeekStrand days={week} />
@@ -200,13 +204,13 @@ export default function TodayScreen() {
 
       {/* quick mood check-in */}
       <Card elevation="sm" style={{ gap: t.space[4] }}>
-        <Text variant="subheading">A quick check-in</Text>
+        <Text variant="subheading">{tr('today.quickCheckIn')}</Text>
         <MoodPicker value={null} onChange={(m) => openComposer({ mood: m })} />
       </Card>
 
       {/* write CTA */}
       <Button
-        label="Write an entry"
+        label={tr('today.write')}
         size="lg"
         fullWidth
         onPress={() => openComposer()}
@@ -231,11 +235,11 @@ export default function TodayScreen() {
       {latest ? (
         <View style={{ gap: t.space[4] }}>
           <SectionHeader
-            eyebrow="Most recent"
-            title="Latest entry"
+eyebrow={tr('today.recentEyebrow')}
+            title={tr('today.recentTitle')}
             trailing={
               <Button
-                label="Timeline"
+                label={tr('tabs.timeline')}
                 variant="ghost"
                 size="sm"
                 onPress={() => router.push('/timeline')}
