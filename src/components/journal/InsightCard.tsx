@@ -2,8 +2,8 @@
  * InsightCard — two shapes:
  *   - default: a single longitudinal observation (free, cheap-model territory):
  *     eyebrow + serif headline + supporting line, optionally a mono stat.
- *   - locked: the premium monthly-report teaser. The deep report is the paid
- *     hero, surfaced exactly when the first month of data is ready, so the card
+ *   - locked: the premium teaser. The daily read (plus correlations and all-time
+ *     analytics) is the paid hero, available from the very first entry, so the card
  *     describes the value and invites the unlock rather than nagging.
  */
 
@@ -39,7 +39,7 @@ export function InsightCard(props: InsightCardProps) {
   const t = useTheme();
 
   if (props.locked) {
-    const { eyebrow, title, body, bullets = [], ctaLabel = 'Unlock the monthly report', onUnlock } =
+    const { eyebrow, title, body, bullets = [], ctaLabel = 'Unlock Premium', onUnlock } =
       props;
     return (
       <View

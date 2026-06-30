@@ -38,6 +38,6 @@ export interface IconProps {
 
 export function Icon({ name, size = 20, color, colorKey = 'text' }: IconProps) {
   const t = useTheme();
-  const resolved = color ?? (t.colors as Record<string, string>)[colorKey];
+  const resolved = color ?? (t.colors as unknown as Record<string, string>)[colorKey];
   return <Feather name={name} size={size} color={resolved} />;
 }

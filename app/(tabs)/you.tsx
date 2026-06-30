@@ -6,7 +6,7 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { Alert, Linking, Platform, Pressable, Switch, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, Share, Switch, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useJournal, computeStreak } from '../../src/data/store';
 import { usePremium, useSubscription } from '../../src/data/subscription';
@@ -90,6 +90,29 @@ export default function YouScreen() {
     );
   };
 
+  // Export is a Premium feature: build a JSON snapshot of every entry and hand
+  // it to the native share sheet. Free users are sent to the paywall instead.
+  const onExport = async () => {
+    if (!isPremium) {
+      router.push('/paywall');
+      return;
+    }
+    if (entries.length === 0) {
+      Alert.alert('Nothing to export', 'Write an entry first and it’ll be here to export.');
+      return;
+    }
+    const payload = JSON.stringify(
+      { app: 'Throughline', exportedAt: new Date().toISOString(), entries },
+      null,
+      2,
+    );
+    try {
+      await Share.share({ title: 'Throughline export', message: payload });
+    } catch {
+      /* user dismissed the share sheet */
+    }
+  };
+
   const streak = useMemo(() => computeStreak(entries), [entries]);
   const since = entries.length > 0 ? entries[entries.length - 1].createdAt : null;
 
@@ -161,8 +184,8 @@ export default function YouScreen() {
         </View>
         <Text variant="body" color="textSecondary">
           {isPremium
-            ? 'Your monthly reports, full pattern analytics, and export are unlocked. Thank you for supporting the work.'
-            : 'Deep monthly reports, richer weekly insights, and pattern analytics across your whole history.'}
+            ? 'Your daily reads, mood × theme correlations, all-time analytics, and export are unlocked. Thank you for supporting the work.'
+            : 'A read for each day from your very first entry, mood × theme correlations, all-time analytics, and export.'}
         </Text>
         {isPremium ? (
           <Button
@@ -215,8 +238,12 @@ export default function YouScreen() {
           <Row
             icon="download"
             label="Export entries"
-            detail="Download everything as JSON"
-            onPress={() => Alert.alert('Export', 'Hook this up to your export flow.')}
+            detail={
+              isPremium
+                ? 'Download everything as JSON'
+                : 'Download everything as JSON · Premium'
+            }
+            onPress={onExport}
           />
           <Divider />
           <Row

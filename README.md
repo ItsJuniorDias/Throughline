@@ -94,7 +94,7 @@ app/                        # rotas (expo-router, file-based)
   (tabs)/_layout.tsx        # ← NativeTabs liquid glass (Today · Timeline · Insights · You)
   (tabs)/index.tsx          # Today: saudação, WeekStrand, prompt do dia, check-in, última entrada
   (tabs)/timeline.tsx       # o fio vertical com todas as entradas + filtro por tema
-  (tabs)/insights.tsx       # tendência de humor, temas, observação grátis + relatório mensal (locked)
+  (tabs)/insights.tsx       # tendência de humor, temas, observação grátis + leitura diária, correlações e all-time (premium)
   (tabs)/you.tsx            # perfil, premium, ajustes, privacidade, limpar dados
   entry/new.tsx             # composer (modal): humor + prosa serif + tags + guardrail de crise
   entry/[id].tsx            # detalhe da entrada
@@ -119,13 +119,17 @@ quando o volume crescer.
 O valor longitudinal depende de **resumir sem nunca jogar o corpus inteiro no
 modelo**. O plano (mesmo padrão de conteúdo estático que você já usou): na escrita,
 extrair metadados estruturados por entrada (humor, temas, entidades) com um modelo
-barato → consolidar em semanal → mensal. O campo `summary` em `src/data/types.ts`
-já deixa a camada de dados pronta pra isso.
+barato → reaproveitar esses resumos nos agregados (diário, semanal). O campo
+`summary` em `src/data/types.ts` já deixa a camada de dados pronta pra isso.
 
-Funil pensado: captura grátis + prompts diários (modelo barato) → **paywall quando
-o primeiro relatório mensal profundo fica pronto** → pago = relatório mensal
-(modelo frontier) + analytics de padrões. O card "Monthly report" (locked) na aba
-Insights já é esse gancho.
+Funil pensado: captura grátis + prompts diários + observação semanal grátis (modelo
+barato) → **paywall vendendo a leitura diária** → pago = uma leitura do dia
+(modelo frontier) **já a partir da 1ª entrada**, + correlações humor×tema e
+analytics all-time. O gancho mudou de propósito: antes o premium só "acendia"
+depois de semanas acumuladas (assina e não vê nada); agora o conteúdo premium
+aparece **no instante em que o usuário assina**, porque basta ter 1 entrada na
+timeline. O `DailyReportCard` (premium) e o teaser `InsightCard` locked na aba
+Insights são esse gancho.
 
 ---
 
@@ -139,20 +143,23 @@ As leituras são geradas via **OpenRouter** (API OpenAI-compatível). Sem depend
 
 **Arquivos:**
 - `src/lib/openrouter.ts` — cliente (endpoint, headers, timeout de 45s, tratamento de 401/402/429, parse de JSON tolerante a fences/prosa). `MODELS.fast` e `MODELS.report` apontam pro Llama 3.3 70B **grátis**.
-- `src/lib/insights.ts` — monta o **digest compacto** (1 linha por entrada: data · humor · tags · gist) e gera a **observação semanal** e o **relatório mensal** (JSON estruturado). Os prompts proíbem diagnóstico/conselho — reflexão, não terapia.
+- `src/lib/insights.ts` — monta o **digest compacto** (1 linha por entrada: data · humor · tags · gist) e gera a **observação semanal** e a **leitura diária** (JSON estruturado). Os prompts proíbem diagnóstico/conselho — reflexão, não terapia.
 - `src/data/insights.ts` — store que **cacheia** o resultado por *assinatura* (qtd de entradas na janela + id da mais recente), então só chama o modelo quando o diário muda; persiste em AsyncStorage; aplica o **guardrail de crise** (não manda conteúdo de autolesão pro modelo).
 
-**Trocar o modelo:** pra um mensal mais forte, troque `MODELS.report` por um frontier pago (ex.: `anthropic/claude-sonnet-4-6` ou `openai/gpt-4.1`). O semanal pode ficar no grátis.
+**Trocar o modelo:** pra uma leitura diária mais forte, troque `MODELS.report` por um frontier pago (ex.: `anthropic/claude-sonnet-4-6` ou `openai/gpt-4.1`). O semanal pode ficar no grátis.
 
 **Free tier:** 20 req/min, 50 req/dia (1000/dia com US$10 em créditos). O cache por assinatura segura o consumo.
 
 **Por nota:** ao salvar, **cada entrada gera seu próprio insight** em background
 (`generateEntryInsight` → `{ gist, themes, reflection }`), gravado em
 `Entry.summary` e exibido na tela de detalhe — o `gist` aparece também no card da
-timeline. Os agregados semanal/mensal reaproveitam esses `gist`s (resumir sem
+timeline. Os agregados diário/semanal reaproveitam esses `gist`s (resumir sem
 reenviar o texto cru).
 
-**Mínimos:** semanal precisa de ≥3 entradas nos últimos 7 dias; mensal ≥5 nos últimos 30 (abaixo disso a tela mostra "escreva mais um pouco").
+**Mínimos:** a leitura **diária** precisa de **≥1 entrada** no dia-alvo (a mais
+recente com entradas) — de propósito, pra o premium já valer no primeiro dia; a
+observação semanal precisa de ≥3 entradas nos últimos 7 dias (abaixo disso a tela
+mostra "escreva mais um pouco").
 
 ---
 
@@ -187,13 +194,14 @@ O paywall puxa **planos, preços, trial e entitlement do RevenueCat** (`src/lib/
 
 ## Próximos passos sugeridos
 
-1. ✅ **OpenRouter** plugado (observação semanal + relatório mensal, com cache e
+1. ✅ **OpenRouter** plugado (observação semanal + leitura diária, com cache e
    guardrail de crise). Próximo passo de escala: extrair `summary.gist` **por
    entrada na escrita** (modelo barato) e fazer o rollup a partir dos resumos, em
    vez de mandar o texto das entradas da janela.
-2. **RevenueCat** + paywall acionado quando o primeiro relatório mensal está pronto.
+2. ✅ **RevenueCat** + paywall que vende a leitura diária — premium já aparece a
+   partir da 1ª entrada (assina e vê valor na hora).
 3. Escolher o nicho do insight (decision journal pra builders, ou um nicho de vida)
-   e ajustar prompts + copy do relatório.
+   e ajustar prompts + copy da leitura diária.
 4. Reminder local real (a aba You já tem o toggle) via `expo-notifications`.
 
 ---

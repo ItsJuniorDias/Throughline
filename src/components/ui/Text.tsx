@@ -45,7 +45,7 @@ export function Text({
   const t = useTheme();
   const resolved =
     tint ??
-    (color in t.colors ? (t.colors as Record<string, string>)[color as string] : (color as string));
+    (color in t.colors ? (t.colors as unknown as Record<string, string>)[color as string] : (color as string));
 
   return (
     <RNText

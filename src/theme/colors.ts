@@ -43,6 +43,8 @@ export interface ColorScheme {
   warning: string;
   danger: string;
   info: string;
+  successMuted: string; // soft success wash (e.g. "lifts you" rows)
+  dangerMuted: string; // soft caution wash (e.g. "weighs on you" rows)
 
   // glass tint passed to expo-blur
   glassTint: 'light' | 'dark';
@@ -76,6 +78,8 @@ export const lightColors: ColorScheme = {
   warning: hue.warning,
   danger: hue.danger,
   info: hue.info,
+  successMuted: 'rgba(78, 140, 106, 0.14)',
+  dangerMuted: 'rgba(180, 84, 62, 0.14)',
 
   glassTint: 'light',
   glassOverlay: 'rgba(247, 248, 247, 0.55)',
@@ -108,6 +112,8 @@ export const darkColors: ColorScheme = {
   warning: '#D5934A',
   danger: '#CC6A53',
   info: '#7A92C0',
+  successMuted: 'rgba(95, 163, 126, 0.18)',
+  dangerMuted: 'rgba(204, 106, 83, 0.18)',
 
   glassTint: 'dark',
   glassOverlay: 'rgba(21, 23, 27, 0.45)',

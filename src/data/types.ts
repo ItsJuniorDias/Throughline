@@ -5,7 +5,7 @@
  * the longitudinal value of this product depends on being able to roll entries
  * up over months without ever feeding the entire corpus to a model. The plan is
  * to extract small structured metadata per entry at write time (mood, themes,
- * entities) with a cheap model, then roll those summaries → weekly → monthly.
+ * entities) with a cheap model, then roll those summaries → daily → weekly.
  * The field is scaffolded here so the data layer is shaped for that from day one.
  */
 

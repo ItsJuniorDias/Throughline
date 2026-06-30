@@ -16,8 +16,8 @@ const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 const API_KEY = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY ?? '';
 
 /**
- * Model slugs. Both default to a free Llama for zero-cost dev. For the monthly
- * report you'll likely want a stronger (paid) model in production — swap
+ * Model slugs. Both default to a free Llama for zero-cost dev. For the daily
+ * read you'll likely want a stronger (paid) model in production — swap
  * `report` for e.g. 'anthropic/claude-sonnet-4-6' or 'openai/gpt-4.1'.
  */
 export const MODELS = {

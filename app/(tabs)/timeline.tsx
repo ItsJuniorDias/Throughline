@@ -5,17 +5,17 @@
  * as one continuous line.)
  */
 
-import React, { useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import { useJournal, themeFrequency } from '../../src/data/store';
-import { useTheme } from '../../src/theme/ThemeProvider';
-import { ScreenScrollView } from '../../src/components/ui/ScreenScrollView';
-import { Text } from '../../src/components/ui/Text';
-import { Button } from '../../src/components/ui/Button';
-import { Chip } from '../../src/components/ui/Chip';
-import { Icon } from '../../src/components/ui/Divider';
-import { EntryCard, SectionHeader } from '../../src/components/journal';
+import React, { useMemo, useState } from "react";
+import { ScrollView, View } from "react-native";
+import { useRouter } from "expo-router";
+import { useJournal, themeFrequency } from "../../src/data/store";
+import { useTheme } from "../../src/theme/ThemeProvider";
+import { ScreenScrollView } from "../../src/components/ui/ScreenScrollView";
+import { Text } from "../../src/components/ui/Text";
+import { Button } from "../../src/components/ui/Button";
+import { Chip } from "../../src/components/ui/Chip";
+import { Icon } from "../../src/components/ui/Divider";
+import { EntryCard, SectionHeader } from "../../src/components/journal";
 
 export default function TimelineScreen() {
   const t = useTheme();
@@ -43,7 +43,11 @@ export default function TimelineScreen() {
           contentContainerStyle={{ gap: 8, paddingRight: t.space[5] }}
           style={{ marginHorizontal: -t.gutter, paddingHorizontal: t.gutter }}
         >
-          <Chip label="All" selected={filter === null} onPress={() => setFilter(null)} />
+          <Chip
+            label="All"
+            selected={filter === null}
+            onPress={() => setFilter(null)}
+          />
           {topTags.map((tag) => (
             <Chip
               key={tag.tag}
@@ -69,15 +73,34 @@ export default function TimelineScreen() {
           ))}
         </View>
       ) : (
-        <View style={{ alignItems: 'center', gap: t.space[4], paddingVertical: t.space[11] }}>
+        <View
+          style={{
+            alignItems: "center",
+            gap: t.space[4],
+            paddingVertical: t.space[11],
+          }}
+        >
           <Icon name="feather" size={28} colorKey="textMuted" />
+
           <Text variant="serifBody" color="textSecondary" align="center">
-            {filter ? `No entries tagged “${filter}”.` : 'Your timeline starts with one entry.'}
+            {filter
+              ? `No entries tagged “${filter}”.`
+              : "Your timeline starts with one entry."}
           </Text>
+
           {!filter ? (
-            <Button label="Write the first one" onPress={() => router.push('/entry/new')} />
+            <Button
+              label="Write the first one"
+              onPress={() => router.push("/entry/new")}
+              fullWidth
+            />
           ) : (
-            <Button label="Clear filter" variant="ghost" onPress={() => setFilter(null)} />
+            <Button
+              label="Clear filter"
+              variant="ghost"
+              onPress={() => setFilter(null)}
+              fullWidth
+            />
           )}
         </View>
       )}

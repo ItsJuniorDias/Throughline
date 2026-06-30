@@ -32,26 +32,22 @@ const PRIVACY_URL = "https://throughline.app/privacy";
 
 const FEATURES: { icon: IconName; title: string; detail: string }[] = [
   {
-    icon: "file-text",
-    title: "Deep monthly reports",
+    icon: "sunrise",
+    title: "A read for today",
     detail:
-      "A frontier-model read of every month — patterns, shifts, and throughlines.",
-  },
-  {
-    icon: "trending-up",
-    title: "Pattern analytics",
-    detail:
-      "Mood and theme trends across your entire history, not just this week.",
+      "Every day you write, a frontier-model reflection on that day — ready the moment you subscribe, from your very first entry.",
   },
   {
     icon: "git-merge",
-    title: "Mood × theme correlations",
-    detail: "See what consistently lifts you and what quietly drains you.",
+    title: "What lifts you, what drains you",
+    detail:
+      "Mood × theme correlations across your history — the patterns you can’t feel one day at a time.",
   },
   {
-    icon: "sunrise",
-    title: "Richer weekly insights",
-    detail: "More than one observation — a fuller picture, every week.",
+    icon: "trending-up",
+    title: "All-time analytics",
+    detail:
+      "Your lifetime mood trend, longest streak, and the long arc — not just the last 30 days.",
   },
   {
     icon: "download",
@@ -211,7 +207,7 @@ function MemberView({
         </Text>
         <Text variant="body" color="textSecondary" align="center">
           {celebrate
-            ? "Welcome to Throughline Premium. Your first monthly report is waiting in Insights."
+            ? "Welcome to Throughline Premium. Your read for today is ready in Insights."
             : "Throughline Premium is active on this account. Thank you for supporting the work."}
         </Text>
       </View>
@@ -247,8 +243,6 @@ export default function Paywall() {
     purchaseSelected,
     restore,
   } = useSubscription();
-
-  console.log(plans, "PLANS");
 
   const [justPurchased, setJustPurchased] = useState(false);
 
@@ -364,11 +358,12 @@ export default function Paywall() {
               Throughline Premium
             </Text>
             <Text variant="display" align="center">
-              Read the months you’ve lived
+              A read every day, not once a month
             </Text>
             <Text variant="body" color="textSecondary" align="center">
-              The daily writing is yours free. Premium turns it into the
-              longitudinal picture you can’t see one day at a time.
+              The writing is yours free. Premium reads each day back to you —
+              starting with your very first entry, so it’s there the moment you
+              subscribe.
             </Text>
           </View>
         </View>

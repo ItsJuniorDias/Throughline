@@ -235,7 +235,7 @@ const revenueCatProvider: PurchasesProvider = {
     const offerings = await Purchases.getOfferings();
     const pkgs = offerings?.current?.availablePackages ?? [];
 
-    _packages = new Map(pkgs.map((p) => [p.identifier, p]));
+    _packages = new Map(pkgs.map((p: any) => [p.identifier, p]));
     return buildPlans(pkgs);
   },
 

@@ -8,6 +8,14 @@
  * `entry.summary.gist` and roll those up — `buildDigest` already prefers a
  * stored gist when present, so that upgrade is drop-in.
  *
+ * The reads, by cadence:
+ *   - per-entry  : a reflection on a single note, generated on save (free).
+ *   - weekly     : one observation across the last 7 days (free).
+ *   - DAILY      : the premium hero. A read of the day in the context of the
+ *                  recent thread — the throughline you can't see one day at a
+ *                  time. Generated from a single entry, so it's there the moment
+ *                  someone subscribes (no month-long wait for data).
+ *
  * Safety: prompts forbid diagnosis/advice; this is reflection, not therapy. The
  * crisis guardrail (skipping the model entirely) lives in the insights store.
  */
@@ -18,10 +26,10 @@ import { shortDate } from './date';
 import { moodMeta } from './mood';
 
 // Model chains tried in order on rate-limit. Weekly is cheap → free chain;
-// report starts from MODELS.report (which may be a paid model in production)
-// then falls back to free ones if it's rate-limited.
+// the daily read starts from MODELS.report (which may be a paid frontier model
+// in production) then falls back to free ones if it's rate-limited.
 const WEEKLY_MODELS = FREE_FALLBACKS;
-const REPORT_MODELS = Array.from(new Set([MODELS.report, ...FREE_FALLBACKS]));
+const DAILY_MODELS = Array.from(new Set([MODELS.report, ...FREE_FALLBACKS]));
 
 const SYSTEM = [
   'You are a reflective journaling companion for an app called Throughline.',
@@ -49,7 +57,7 @@ export function buildDigest(entries: Entry[]): string {
     .join('\n');
 }
 
-// ─── Weekly observation ──────────────────────────────────────────────────────
+// ─── Weekly observation (free) ───────────────────────────────────────────────
 
 export async function generateWeeklyObservation(
   entries: Entry[],
@@ -72,62 +80,81 @@ export async function generateWeeklyObservation(
   return text.replace(/^["“]|["”]$/g, '').replace(/^observation:\s*/i, '').trim();
 }
 
-// ─── Monthly report (premium) ────────────────────────────────────────────────
+// ─── Daily read (premium hero) ───────────────────────────────────────────────
 
-export interface MonthlyReport {
+export interface DailyReport {
+  /** short, evocative title for the day */
   title: string;
-  overview: string;
-  themes: { tag: string; note: string }[];
-  moodNarrative: string;
-  definingMoment?: { date: string; note: string };
+  /** 2–3 sentences naming the shape of the day */
+  read: string;
+  /** 1–2 sentences connecting today to the recent thread — the longitudinal payoff */
+  throughline?: string;
+  /** 1 reflective sentence on what the day quietly surfaces (NOT advice) */
+  focus?: string;
+  /** 1 honest closing line */
   closing: string;
 }
 
-export async function generateMonthlyReport(
-  entries: Entry[],
-  monthName: string,
+/**
+ * Generate the day's read. `dayEntries` are the entries written on the target
+ * day (newest-first); `context` is a short lookback over the preceding days so
+ * the model can draw the line *through* them — that continuity is the whole
+ * premium value. With no prior context (a first-ever day) the throughline is
+ * simply omitted.
+ */
+export async function generateDailyReport(
+  dayEntries: Entry[],
+  context: Entry[],
+  dateLabel: string,
   signal?: AbortSignal,
-): Promise<MonthlyReport> {
-  const digest = buildDigest(entries);
+): Promise<DailyReport> {
+  const today = buildDigest(dayEntries);
+  const prior = context.length ? buildDigest(context) : '';
+
   const schema = `{
-  "title": "a short, evocative title for the month (max ~6 words)",
-  "overview": "2-4 sentences naming the shape of the month",
-  "themes": [{ "tag": "a recurring theme", "note": "1 sentence on what it carried" }],
-  "moodNarrative": "1-2 sentences on how mood moved across the month",
-  "definingMoment": { "date": "Mon D", "note": "1 sentence on a moment that defined it" },
+  "title": "a short, evocative title for the day (max ~6 words)",
+  "read": "2-3 sentences naming the shape of ${dateLabel}",
+  "throughline": "1-2 sentences connecting ${dateLabel} to the recent days — the pattern running through them (omit if there is no prior context)",
+  "focus": "1 reflective sentence naming what ${dateLabel} quietly surfaces to sit with (a noticing, NOT advice)",
   "closing": "1 honest closing sentence"
 }`;
+
+  const priorBlock = prior
+    ? `\n\nFor context, my recent days before ${dateLabel} (newest first):\n\n${prior}`
+    : '';
+
   const messages: ChatMessage[] = [
     { role: 'system', content: SYSTEM },
     {
       role: 'user',
       content:
-        `Here are my journal entries from ${monthName} (newest first):\n\n${digest}\n\n` +
-        `Write my monthly report as a longitudinal read — patterns across mood and themes, ` +
-        `what shifted, and the throughlines I can't see day to day. Include 2–4 themes.\n\n` +
+        `Here is what I wrote on ${dateLabel} (newest first):\n\n${today}${priorBlock}\n\n` +
+        `Write my read for ${dateLabel}: the shape of the day, and — using the recent context — ` +
+        `the throughline running from those days into this one that I can't see one day at a time. ` +
+        `Be specific to my entries. No advice.\n\n` +
         `Respond with ONLY valid JSON in exactly this shape (no markdown, no extra text):\n${schema}`,
     },
   ];
-  const report = await completeJSON<MonthlyReport>({
-    models: REPORT_MODELS,
+
+  const report = await completeJSON<DailyReport>({
+    models: DAILY_MODELS,
     messages,
-    maxTokens: 900,
+    maxTokens: 700,
     temperature: 0.6,
     signal,
   });
+
   // light normalization so the UI never crashes on a malformed field
   return {
-    title: report.title?.trim() || `Your ${monthName}`,
-    overview: report.overview?.trim() || '',
-    themes: Array.isArray(report.themes) ? report.themes.filter((t) => t?.tag && t?.note).slice(0, 4) : [],
-    moodNarrative: report.moodNarrative?.trim() || '',
-    definingMoment:
-      report.definingMoment?.date && report.definingMoment?.note ? report.definingMoment : undefined,
+    title: report.title?.trim() || `Your ${dateLabel}`,
+    read: report.read?.trim() || '',
+    throughline: report.throughline?.trim() || undefined,
+    focus: report.focus?.trim() || undefined,
     closing: report.closing?.trim() || '',
   };
 }
 
-// ─── Per-entry insight (generated on save) ───────────────────────────────────
+// ─── Per-entry insight (generated on save, free) ─────────────────────────────
 
 export interface EntryInsight {
   gist: string;
@@ -137,7 +164,7 @@ export interface EntryInsight {
 
 /**
  * Generate an insight for a SINGLE entry, right after it's written. Returns a
- * one-line gist + themes (which feed the weekly/monthly rollups) and a short
+ * one-line gist + themes (which feed the weekly/daily rollups) and a short
  * reflection shown to the user. Uses the free fallback chain (cheap, frequent).
  */
 export async function generateEntryInsight(

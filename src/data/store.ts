@@ -146,4 +146,81 @@ export function averageMood(entries: Entry[], withinDays: number): number | null
   return inWindow.reduce((acc, e) => acc + e.mood, 0) / inWindow.length;
 }
 
+/** Number of distinct calendar days with at least one entry. */
+export function daysWritten(entries: Entry[]): number {
+  return new Set(entries.map((e) => dayKey(e.createdAt))).size;
+}
+
+/** The longest run of consecutive days ever written (for all-time analytics). */
+export function computeLongestStreak(entries: Entry[]): number {
+  if (entries.length === 0) return 0;
+  const keys = [...new Set(entries.map((e) => dayKey(e.createdAt)))].sort(); // YYYY-MM-DD sorts chronologically
+  let longest = 1;
+  let run = 1;
+  for (let i = 1; i < keys.length; i++) {
+    const prev = new Date(`${keys[i - 1]}T00:00:00`);
+    const cur = new Date(`${keys[i]}T00:00:00`);
+    if (daysBetween(cur, prev) === 1) {
+      run += 1;
+      longest = Math.max(longest, run);
+    } else {
+      run = 1;
+    }
+  }
+  return longest;
+}
+
+/** Days spanned from the first entry to today (1-based; 1 if you started today). */
+export function spanDays(entries: Entry[]): number {
+  if (entries.length === 0) return 0;
+  const first = new Date(entries[entries.length - 1].createdAt); // oldest (list is newest-first)
+  return daysBetween(new Date(), first) + 1;
+}
+
+export interface MoodCorrelation {
+  tag: string;
+  /** average mood of entries carrying this tag */
+  avgMood: number;
+  /** avgMood minus the overall average — how much this theme bends your mood */
+  delta: number;
+  count: number;
+}
+
+/**
+ * For each recurring theme, how its entries' average mood compares to your
+ * overall average — the basis of "what lifts you" vs "what weighs on you".
+ * Themes below `minCount` entries are dropped to keep it out of the noise.
+ * Sorted by the size of the effect, largest first.
+ */
+export function moodCorrelations(
+  entries: Entry[],
+  opts: { minCount?: number; withinDays?: number } = {},
+): MoodCorrelation[] {
+  const { minCount = 3, withinDays } = opts;
+  const inScope =
+    withinDays != null
+      ? entries.filter((e) => daysBetween(new Date(), new Date(e.createdAt)) <= withinDays)
+      : entries;
+  if (inScope.length === 0) return [];
+
+  const overall = inScope.reduce((acc, e) => acc + e.mood, 0) / inScope.length;
+  const buckets = new Map<string, { sum: number; count: number }>();
+  for (const e of inScope) {
+    for (const tag of e.tags) {
+      const b = buckets.get(tag) ?? { sum: 0, count: 0 };
+      b.sum += e.mood;
+      b.count += 1;
+      buckets.set(tag, b);
+    }
+  }
+
+  return [...buckets.entries()]
+    .filter(([, b]) => b.count >= minCount)
+    .map(([tag, b]) => {
+      const avgMood = b.sum / b.count;
+      return { tag, avgMood, delta: avgMood - overall, count: b.count };
+    })
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+}
+
 export type { Entry, Mood };

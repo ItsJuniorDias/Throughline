@@ -1,13 +1,18 @@
 /**
  * Insights store — orchestrates and caches the AI-generated reads.
  *
- * Generation is keyed by a content "signature" (how many entries are in the
- * window + the newest entry id), so we only call the model when the journal
- * actually changed — not on every screen visit. Results are persisted so
- * reopening the app shows the last read instantly.
+ * Generation is keyed by a content "signature" so we only call the model when
+ * the journal actually changed — not on every screen visit. Results are
+ * persisted so reopening the app shows the last read instantly.
  *
- * Crisis guardrail: if the window contains self-harm language we never send it
- * to the model — we surface a supportive message instead.
+ *   - weekly : signature = (entries in last 7d + newest id). Free.
+ *   - daily  : signature = (target day + that day's entry count + newest id of
+ *              the day). The target day is the most recent day that has any
+ *              entries, so a brand-new subscriber sees a read immediately and it
+ *              rolls forward to a fresh read each new day they write. Premium.
+ *
+ * Crisis guardrail: if a window contains self-harm language we never send it to
+ * the model — we surface a supportive message instead.
  */
 
 import { create } from 'zustand';
@@ -15,28 +20,34 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Entry } from './types';
 import { useJournal } from './store';
-import { daysBetween } from '../lib/date';
+import { dayKey, daysBetween, relativeDay, shortDate } from '../lib/date';
 import { containsCrisisLanguage, CRISIS_SUPPORT } from '../lib/safety';
 import { isConfigured } from '../lib/openrouter';
 import {
   generateWeeklyObservation,
-  generateMonthlyReport,
+  generateDailyReport,
   generateEntryInsight,
-  type MonthlyReport,
+  type DailyReport,
 } from '../lib/insights';
 
 type Status = 'idle' | 'loading' | 'error';
 
-export const WEEKLY_MIN = 3; // entries in the last 7 days
-export const MONTHLY_MIN = 5; // entries in the last 30 days
+export const WEEKLY_MIN = 3; // entries in the last 7 days (free weekly read)
+export const DAILY_MIN = 1; // a single entry unlocks the premium daily read
+
+/** How many days of prior context the daily read draws its throughline from. */
+const DAILY_CONTEXT_DAYS = 14;
+const DAILY_CONTEXT_MAX_ENTRIES = 40;
 
 interface WeeklyResult {
   text: string;
   crisis: boolean;
 }
-interface ReportResult {
-  data: MonthlyReport;
+interface DailyResult {
+  data: DailyReport;
   crisis: boolean;
+  /** human label for the day this read covers, e.g. "Today" or "Jun 28" */
+  dayLabel: string;
 }
 
 interface InsightsState {
@@ -45,10 +56,10 @@ interface InsightsState {
   weeklyStatus: Status;
   weeklyError: string | null;
 
-  report: ReportResult | null;
-  reportSig: string | null;
-  reportStatus: Status;
-  reportError: string | null;
+  daily: DailyResult | null;
+  dailySig: string | null;
+  dailyStatus: Status;
+  dailyError: string | null;
 
   // per-entry insight generation status, keyed by entry id (content lives on
   // the entry's `summary` in the journal store)
@@ -56,7 +67,7 @@ interface InsightsState {
   entryError: Record<string, string | undefined>;
 
   generateWeekly: (entries: Entry[], force?: boolean) => Promise<void>;
-  generateReport: (entries: Entry[], monthName: string, force?: boolean) => Promise<void>;
+  generateDaily: (entries: Entry[], force?: boolean) => Promise<void>;
   generateEntry: (entry: Entry, force?: boolean) => Promise<void>;
   clear: () => void;
 }
@@ -66,9 +77,37 @@ function windowed(entries: Entry[], days: number): Entry[] {
   return entries.filter((e) => daysBetween(now, new Date(e.createdAt)) <= days);
 }
 
-function signature(win: Entry[], days: number): string {
-  if (win.length === 0) return `empty:${days}`;
-  return `${win.length}:${win[0].id}:${days}`;
+function weeklySignature(win: Entry[]): string {
+  if (win.length === 0) return 'weekly:empty';
+  return `weekly:${win.length}:${win[0].id}`;
+}
+
+/**
+ * Resolve the day the daily read should cover: the most recent calendar day
+ * that has entries. Returns the entries written that day (newest-first), the
+ * prior context window, a stable signature, and a human label.
+ */
+function resolveDailyTarget(entries: Entry[]):
+  | { day: Entry[]; context: Entry[]; sig: string; label: string }
+  | null {
+  if (entries.length === 0) return null;
+  const newest = entries[0]; // store keeps entries newest-first
+  const targetKey = dayKey(newest.createdAt);
+  const day = entries.filter((e) => dayKey(e.createdAt) === targetKey);
+  const target = new Date(newest.createdAt);
+  const context = entries
+    .filter((e) => {
+      if (dayKey(e.createdAt) === targetKey) return false;
+      return daysBetween(target, new Date(e.createdAt)) <= DAILY_CONTEXT_DAYS;
+    })
+    .slice(0, DAILY_CONTEXT_MAX_ENTRIES);
+  const label = relativeDay(newest.createdAt); // "Today" | "Yesterday" | "Mon" | "Jun 28"
+  return {
+    day,
+    context,
+    sig: `daily:${targetKey}:${day.length}:${day[0].id}`,
+    label,
+  };
 }
 
 const NO_KEY_MSG = 'Add your OpenRouter key to .env to generate insights.';
@@ -81,10 +120,10 @@ export const useInsights = create<InsightsState>()(
       weeklyStatus: 'idle',
       weeklyError: null,
 
-      report: null,
-      reportSig: null,
-      reportStatus: 'idle',
-      reportError: null,
+      daily: null,
+      dailySig: null,
+      dailyStatus: 'idle',
+      dailyError: null,
 
       entryStatus: {},
       entryError: {},
@@ -92,7 +131,7 @@ export const useInsights = create<InsightsState>()(
       generateWeekly: async (entries, force = false) => {
         const win = windowed(entries, 7);
         if (win.length < WEEKLY_MIN) return; // screen shows the "write more" state
-        const sig = signature(win, 7);
+        const sig = weeklySignature(win);
         if (!force && get().weeklySig === sig && get().weekly) return; // cached & unchanged
         if (get().weeklyStatus === 'loading') return; // a request is already in flight
 
@@ -119,42 +158,42 @@ export const useInsights = create<InsightsState>()(
         }
       },
 
-      generateReport: async (entries, monthName, force = false) => {
-        const win = windowed(entries, 30);
-        if (win.length < MONTHLY_MIN) return;
-        const sig = signature(win, 30);
-        if (!force && get().reportSig === sig && get().report) return;
-        if (get().reportStatus === 'loading') return; // a request is already in flight
+      generateDaily: async (entries, force = false) => {
+        const target = resolveDailyTarget(entries);
+        if (!target || target.day.length < DAILY_MIN) return; // screen shows the empty state
+        const { day, context, sig, label } = target;
+        if (!force && get().dailySig === sig && get().daily) return; // cached & unchanged
+        if (get().dailyStatus === 'loading') return; // a request is already in flight
 
-        if (containsCrisisLanguage(win.map((e) => e.text).join(' '))) {
+        if (containsCrisisLanguage(day.map((e) => e.text).join(' '))) {
           set({
-            report: {
+            daily: {
               data: {
-                title: 'A heavy month',
-                overview: CRISIS_SUPPORT.message,
-                themes: [],
-                moodNarrative: '',
+                title: 'A heavy day',
+                read: CRISIS_SUPPORT.message,
                 closing: '',
               },
               crisis: true,
+              dayLabel: label,
             },
-            reportSig: sig,
-            reportStatus: 'idle',
-            reportError: null,
+            dailySig: sig,
+            dailyStatus: 'idle',
+            dailyError: null,
           });
           return;
         }
         if (!isConfigured()) {
-          set({ reportStatus: 'error', reportError: NO_KEY_MSG });
+          set({ dailyStatus: 'error', dailyError: NO_KEY_MSG });
           return;
         }
 
-        set({ reportStatus: 'loading', reportError: null });
+        const dateLabel = label === 'Today' ? 'today' : shortDate(day[0].createdAt);
+        set({ dailyStatus: 'loading', dailyError: null });
         try {
-          const data = await generateMonthlyReport(win, monthName);
-          set({ report: { data, crisis: false }, reportSig: sig, reportStatus: 'idle' });
+          const data = await generateDailyReport(day, context, dateLabel);
+          set({ daily: { data, crisis: false, dayLabel: label }, dailySig: sig, dailyStatus: 'idle' });
         } catch (e: any) {
-          set({ reportStatus: 'error', reportError: e?.message ?? 'Could not generate the report.' });
+          set({ dailyStatus: 'error', dailyError: e?.message ?? 'Could not generate the read.' });
         }
       },
 
@@ -207,25 +246,25 @@ export const useInsights = create<InsightsState>()(
           weeklySig: null,
           weeklyStatus: 'idle',
           weeklyError: null,
-          report: null,
-          reportSig: null,
-          reportStatus: 'idle',
-          reportError: null,
+          daily: null,
+          dailySig: null,
+          dailyStatus: 'idle',
+          dailyError: null,
           entryStatus: {},
           entryError: {},
         }),
     }),
     {
-      name: 'throughline.insights.v1',
+      name: 'throughline.insights.v2',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({
         weekly: s.weekly,
         weeklySig: s.weeklySig,
-        report: s.report,
-        reportSig: s.reportSig,
+        daily: s.daily,
+        dailySig: s.dailySig,
       }),
     },
   ),
 );
 
-export type { MonthlyReport };
+export type { DailyReport };
