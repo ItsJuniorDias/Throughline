@@ -12,22 +12,28 @@
  * crisis guardrail (skipping the model entirely) lives in the insights store.
  */
 
-import type { Entry } from "../data/types";
-import { MODELS, complete, completeJSON, type ChatMessage } from "./openrouter";
-import { shortDate } from "./date";
-import { moodMeta } from "./mood";
+import type { Entry } from '../data/types';
+import { MODELS, FREE_FALLBACKS, complete, completeJSON, type ChatMessage } from './openrouter';
+import { shortDate } from './date';
+import { moodMeta } from './mood';
+
+// Model chains tried in order on rate-limit. Weekly is cheap → free chain;
+// report starts from MODELS.report (which may be a paid model in production)
+// then falls back to free ones if it's rate-limited.
+const WEEKLY_MODELS = FREE_FALLBACKS;
+const REPORT_MODELS = Array.from(new Set([MODELS.report, ...FREE_FALLBACKS]));
 
 const SYSTEM = [
-  "You are a reflective journaling companion for an app called Throughline.",
-  "You write honest, specific, warm observations about patterns in someone's journal.",
-  "You are NOT a therapist or doctor. Never diagnose. Never give medical, clinical, or",
-  "prescriptive advice. Reflect and notice; do not instruct or tell them what to do.",
-  "Write in English, in a calm, literary, concrete voice. Be specific to their entries —",
+  'You are a reflective journaling companion for an app called Throughline.',
+  'You write honest, specific, warm observations about patterns in someone\'s journal.',
+  'You are NOT a therapist or doctor. Never diagnose. Never give medical, clinical, or',
+  'prescriptive advice. Reflect and notice; do not instruct or tell them what to do.',
+  'Write in English, in a calm, literary, concrete voice. Be specific to their entries —',
   'no generic platitudes. Address the reader as "you". Keep it tight.',
-  "If entries express thoughts of self-harm or crisis, do not analyze them — gently",
-  "acknowledge it sounds heavy and suggest reaching out to someone they trust or a local",
-  "crisis line.",
-].join(" ");
+  'If entries express thoughts of self-harm or crisis, do not analyze them — gently',
+  'acknowledge it sounds heavy and suggest reaching out to someone they trust or a local',
+  'crisis line.',
+].join(' ');
 
 /** One compact line per entry — the model input. */
 export function buildDigest(entries: Entry[]): string {
@@ -36,14 +42,11 @@ export function buildDigest(entries: Entry[]): string {
     .map((e) => {
       const date = shortDate(e.createdAt);
       const mood = moodMeta(e.mood).label;
-      const tags = e.tags.length ? ` · ${e.tags.join(", ")}` : "";
-      const gist = (e.summary?.gist ?? e.text)
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, 240);
+      const tags = e.tags.length ? ` · ${e.tags.join(', ')}` : '';
+      const gist = (e.summary?.gist ?? e.text).replace(/\s+/g, ' ').trim().slice(0, 240);
       return `- ${date} · ${mood}${tags}: ${gist}`;
     })
-    .join("\n");
+    .join('\n');
 }
 
 // ─── Weekly observation ──────────────────────────────────────────────────────
@@ -54,28 +57,19 @@ export async function generateWeeklyObservation(
 ): Promise<string> {
   const digest = buildDigest(entries);
   const messages: ChatMessage[] = [
-    { role: "system", content: SYSTEM },
+    { role: 'system', content: SYSTEM },
     {
-      role: "user",
+      role: 'user',
       content:
         `Here are my journal entries from the past week (newest first):\n\n${digest}\n\n` +
-        "Write ONE short observation (2–3 sentences) about a pattern, tension, or throughline " +
-        "across this week. Notice something I might not have. No advice, no summary of each day, " +
-        "no preamble — just the observation.",
+        'Write ONE short observation (2–3 sentences) about a pattern, tension, or throughline ' +
+        'across this week. Notice something I might not have. No advice, no summary of each day, ' +
+        'no preamble — just the observation.',
     },
   ];
-  const text = await complete({
-    model: MODELS.fast,
-    messages,
-    maxTokens: 220,
-    temperature: 0.7,
-    signal,
-  });
+  const text = await complete({ models: WEEKLY_MODELS, messages, maxTokens: 220, temperature: 0.7, signal });
   // guard against the model wrapping it in quotes/labels
-  return text
-    .replace(/^["“]|["”]$/g, "")
-    .replace(/^observation:\s*/i, "")
-    .trim();
+  return text.replace(/^["“]|["”]$/g, '').replace(/^observation:\s*/i, '').trim();
 }
 
 // ─── Monthly report (premium) ────────────────────────────────────────────────
@@ -104,9 +98,9 @@ export async function generateMonthlyReport(
   "closing": "1 honest closing sentence"
 }`;
   const messages: ChatMessage[] = [
-    { role: "system", content: SYSTEM },
+    { role: 'system', content: SYSTEM },
     {
-      role: "user",
+      role: 'user',
       content:
         `Here are my journal entries from ${monthName} (newest first):\n\n${digest}\n\n` +
         `Write my monthly report as a longitudinal read — patterns across mood and themes, ` +
@@ -115,7 +109,7 @@ export async function generateMonthlyReport(
     },
   ];
   const report = await completeJSON<MonthlyReport>({
-    model: MODELS.report,
+    models: REPORT_MODELS,
     messages,
     maxTokens: 900,
     temperature: 0.6,
@@ -124,15 +118,11 @@ export async function generateMonthlyReport(
   // light normalization so the UI never crashes on a malformed field
   return {
     title: report.title?.trim() || `Your ${monthName}`,
-    overview: report.overview?.trim() || "",
-    themes: Array.isArray(report.themes)
-      ? report.themes.filter((t) => t?.tag && t?.note).slice(0, 4)
-      : [],
-    moodNarrative: report.moodNarrative?.trim() || "",
+    overview: report.overview?.trim() || '',
+    themes: Array.isArray(report.themes) ? report.themes.filter((t) => t?.tag && t?.note).slice(0, 4) : [],
+    moodNarrative: report.moodNarrative?.trim() || '',
     definingMoment:
-      report.definingMoment?.date && report.definingMoment?.note
-        ? report.definingMoment
-        : undefined,
-    closing: report.closing?.trim() || "",
+      report.definingMoment?.date && report.definingMoment?.note ? report.definingMoment : undefined,
+    closing: report.closing?.trim() || '',
   };
 }

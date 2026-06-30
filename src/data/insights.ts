@@ -83,6 +83,7 @@ export const useInsights = create<InsightsState>()(
         if (win.length < WEEKLY_MIN) return; // screen shows the "write more" state
         const sig = signature(win, 7);
         if (!force && get().weeklySig === sig && get().weekly) return; // cached & unchanged
+        if (get().weeklyStatus === 'loading') return; // a request is already in flight
 
         if (containsCrisisLanguage(win.map((e) => e.text).join(' '))) {
           set({
@@ -112,6 +113,7 @@ export const useInsights = create<InsightsState>()(
         if (win.length < MONTHLY_MIN) return;
         const sig = signature(win, 30);
         if (!force && get().reportSig === sig && get().report) return;
+        if (get().reportStatus === 'loading') return; // a request is already in flight
 
         if (containsCrisisLanguage(win.map((e) => e.text).join(' '))) {
           set({
