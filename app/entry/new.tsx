@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useJournal } from '../../src/data/store';
+import { useInsights } from '../../src/data/insights';
 import { promptById } from '../../src/constants/prompts';
 import { themeFrequency } from '../../src/data/store';
 import { containsCrisisLanguage, CRISIS_SUPPORT } from '../../src/lib/safety';
@@ -69,8 +70,10 @@ export default function ComposeScreen() {
 
   const save = () => {
     if (!canSave || mood == null) return;
-    addEntry({ text, mood, tags, promptId: params.promptId });
+    const entry = addEntry({ text, mood, tags, promptId: params.promptId });
     haptics.success();
+    // generate this note's insight in the background (per-note)
+    useInsights.getState().generateEntry(entry);
     if (containsCrisisLanguage(text)) {
       Alert.alert(CRISIS_SUPPORT.title, CRISIS_SUPPORT.message, [
         { text: 'Okay', onPress: () => router.back() },

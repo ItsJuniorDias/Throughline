@@ -77,6 +77,13 @@ export function EntryCard({ entry, isFirst, isLast, onPress, expanded }: EntryCa
           {entry.text}
         </Text>
 
+        {/* distilled gist (per-entry insight) */}
+        {entry.summary?.gist ? (
+          <Text variant="caption" color="accentText" style={{ marginTop: t.space[2] }}>
+            {entry.summary.gist}
+          </Text>
+        ) : null}
+
         {/* tags */}
         {entry.tags.length > 0 ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: t.space[3] }}>

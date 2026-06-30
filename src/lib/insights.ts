@@ -126,3 +126,55 @@ export async function generateMonthlyReport(
     closing: report.closing?.trim() || '',
   };
 }
+
+// ─── Per-entry insight (generated on save) ───────────────────────────────────
+
+export interface EntryInsight {
+  gist: string;
+  themes: string[];
+  reflection: string;
+}
+
+/**
+ * Generate an insight for a SINGLE entry, right after it's written. Returns a
+ * one-line gist + themes (which feed the weekly/monthly rollups) and a short
+ * reflection shown to the user. Uses the free fallback chain (cheap, frequent).
+ */
+export async function generateEntryInsight(
+  entry: Entry,
+  signal?: AbortSignal,
+): Promise<EntryInsight> {
+  const date = shortDate(entry.createdAt);
+  const mood = moodMeta(entry.mood).label;
+  const tags = entry.tags.length ? entry.tags.join(', ') : '—';
+  const schema = `{
+  "gist": "a 4-8 word distillation of this entry",
+  "themes": ["1-3 short, lowercase theme tags"],
+  "reflection": "2-3 sentences reflecting back a pattern, tension, or what this entry quietly reveals"
+}`;
+  const messages: ChatMessage[] = [
+    { role: 'system', content: SYSTEM },
+    {
+      role: 'user',
+      content:
+        `A journal entry — ${date} · mood: ${mood} · tags: ${tags}\n\n"${entry.text}"\n\n` +
+        `Reflect on THIS entry. Notice something honest and specific — don't just restate it, ` +
+        `and don't give advice.\n\n` +
+        `Respond with ONLY valid JSON in exactly this shape (no markdown, no extra text):\n${schema}`,
+    },
+  ];
+  const out = await completeJSON<EntryInsight>({
+    models: WEEKLY_MODELS,
+    messages,
+    maxTokens: 320,
+    temperature: 0.7,
+    signal,
+  });
+  return {
+    gist: (out.gist ?? '').replace(/\s+/g, ' ').trim(),
+    themes: Array.isArray(out.themes)
+      ? out.themes.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim().toLowerCase()).slice(0, 3)
+      : [],
+    reflection: (out.reflection ?? '').trim(),
+  };
+}

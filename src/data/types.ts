@@ -16,6 +16,8 @@ export interface EntrySummary {
   themes: string[];
   /** optional one-line gist, cheap-model generated */
   gist?: string;
+  /** per-entry reflection shown to the user (generated on save) */
+  reflection?: string;
 }
 
 export interface Entry {

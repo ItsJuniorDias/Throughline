@@ -3,16 +3,18 @@
  * the complete prose, and tags. A delete action lives in the header.
  */
 
-import React from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useJournal, getEntryById } from '../../src/data/store';
+import { useInsights } from '../../src/data/insights';
 import { promptById } from '../../src/constants/prompts';
 import { shortDate, clockTime } from '../../src/lib/date';
 import { moodMeta } from '../../src/lib/mood';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { Text } from '../../src/components/ui/Text';
+import { Button } from '../../src/components/ui/Button';
 import { Chip } from '../../src/components/ui/Chip';
 import { Icon } from '../../src/components/ui/Divider';
 import { haptics } from '../../src/lib/haptics';
@@ -28,6 +30,18 @@ export default function EntryDetailScreen() {
   const entry = getEntryById(entries, id);
   const prompt = entry ? promptById(entry.promptId) : undefined;
   const mood = entry ? moodMeta(entry.mood) : null;
+
+  const insightStatus = useInsights((s) => (entry ? s.entryStatus[entry.id] : undefined));
+  const insightError = useInsights((s) => (entry ? s.entryError[entry.id] : undefined));
+  const generateEntry = useInsights((s) => s.generateEntry);
+  const reflection = entry?.summary?.reflection;
+  const gist = entry?.summary?.gist;
+
+  // generate this note's insight on open if it doesn't have one yet
+  useEffect(() => {
+    if (entry && !entry.summary?.reflection) generateEntry(entry);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entry?.id]);
 
   const confirmDelete = () =>
     Alert.alert('Delete entry?', 'This can’t be undone.', [
@@ -118,6 +132,76 @@ export default function EntryDetailScreen() {
           <Text variant="serifBody" color="text">
             {entry.text}
           </Text>
+
+          {/* per-entry insight (generated on save) */}
+          <View
+            style={{
+              borderRadius: t.radius.xl,
+              borderWidth: 1,
+              borderColor: t.colors.border,
+              backgroundColor: t.colors.surface,
+              padding: t.space[5],
+              gap: t.space[3],
+              ...t.shadow('sm'),
+            }}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Text variant="overline" color="accentText">
+                Insight
+              </Text>
+              {reflection && insightStatus !== 'loading' ? (
+                <Pressable onPress={() => entry && generateEntry(entry, true)} hitSlop={8}>
+                  <Icon name="refresh-cw" size={15} colorKey="textMuted" />
+                </Pressable>
+              ) : null}
+            </View>
+
+            {gist ? (
+              <Text variant="mono" color="textMuted">
+                {gist}
+              </Text>
+            ) : null}
+
+            {insightStatus === 'loading' && !reflection ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space[3] }}>
+                <ActivityIndicator color={t.colors.accent} />
+                <Text variant="body" color="textMuted">
+                  Reading this entry…
+                </Text>
+              </View>
+            ) : reflection ? (
+              <Text variant="serifBody" color="text">
+                {reflection}
+              </Text>
+            ) : insightStatus === 'error' ? (
+              <View style={{ gap: t.space[2] }}>
+                <Text variant="body" color="textSecondary">
+                  Couldn’t generate an insight.
+                </Text>
+                {insightError ? (
+                  <Text variant="caption" color="textMuted">
+                    {insightError}
+                  </Text>
+                ) : null}
+                <Button
+                  label="Try again"
+                  variant="secondary"
+                  size="sm"
+                  onPress={() => entry && generateEntry(entry, true)}
+                />
+              </View>
+            ) : null}
+
+            <Text variant="caption" color="textMuted">
+              A reflection, not advice.
+            </Text>
+          </View>
 
           {/* tags */}
           {entry.tags.length > 0 ? (

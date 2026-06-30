@@ -14,12 +14,14 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Entry } from './types';
+import { useJournal } from './store';
 import { daysBetween } from '../lib/date';
 import { containsCrisisLanguage, CRISIS_SUPPORT } from '../lib/safety';
 import { isConfigured } from '../lib/openrouter';
 import {
   generateWeeklyObservation,
   generateMonthlyReport,
+  generateEntryInsight,
   type MonthlyReport,
 } from '../lib/insights';
 
@@ -48,8 +50,14 @@ interface InsightsState {
   reportStatus: Status;
   reportError: string | null;
 
+  // per-entry insight generation status, keyed by entry id (content lives on
+  // the entry's `summary` in the journal store)
+  entryStatus: Record<string, Status | undefined>;
+  entryError: Record<string, string | undefined>;
+
   generateWeekly: (entries: Entry[], force?: boolean) => Promise<void>;
   generateReport: (entries: Entry[], monthName: string, force?: boolean) => Promise<void>;
+  generateEntry: (entry: Entry, force?: boolean) => Promise<void>;
   clear: () => void;
 }
 
@@ -77,6 +85,9 @@ export const useInsights = create<InsightsState>()(
       reportSig: null,
       reportStatus: 'idle',
       reportError: null,
+
+      entryStatus: {},
+      entryError: {},
 
       generateWeekly: async (entries, force = false) => {
         const win = windowed(entries, 7);
@@ -147,6 +158,49 @@ export const useInsights = create<InsightsState>()(
         }
       },
 
+      generateEntry: async (entry, force = false) => {
+        // read the freshest copy (it may already have a reflection)
+        const current = useJournal.getState().entries.find((e) => e.id === entry.id) ?? entry;
+        if (!force && current.summary?.reflection) return; // already generated
+        if (get().entryStatus[entry.id] === 'loading') return; // in-flight
+
+        // crisis guard — never send self-harm content to the model
+        if (containsCrisisLanguage(entry.text)) {
+          useJournal.getState().setSummary(entry.id, { reflection: CRISIS_SUPPORT.message });
+          set((s) => ({
+            entryStatus: { ...s.entryStatus, [entry.id]: 'idle' },
+            entryError: { ...s.entryError, [entry.id]: undefined },
+          }));
+          return;
+        }
+        if (!isConfigured()) {
+          set((s) => ({
+            entryStatus: { ...s.entryStatus, [entry.id]: 'error' },
+            entryError: { ...s.entryError, [entry.id]: NO_KEY_MSG },
+          }));
+          return;
+        }
+
+        set((s) => ({
+          entryStatus: { ...s.entryStatus, [entry.id]: 'loading' },
+          entryError: { ...s.entryError, [entry.id]: undefined },
+        }));
+        try {
+          const ins = await generateEntryInsight(entry);
+          useJournal.getState().setSummary(entry.id, {
+            gist: ins.gist || undefined,
+            themes: ins.themes.length ? ins.themes : current.summary?.themes ?? [],
+            reflection: ins.reflection,
+          });
+          set((s) => ({ entryStatus: { ...s.entryStatus, [entry.id]: 'idle' } }));
+        } catch (e: any) {
+          set((s) => ({
+            entryStatus: { ...s.entryStatus, [entry.id]: 'error' },
+            entryError: { ...s.entryError, [entry.id]: e?.message ?? 'Could not generate the insight.' },
+          }));
+        }
+      },
+
       clear: () =>
         set({
           weekly: null,
@@ -157,6 +211,8 @@ export const useInsights = create<InsightsState>()(
           reportSig: null,
           reportStatus: 'idle',
           reportError: null,
+          entryStatus: {},
+          entryError: {},
         }),
     }),
     {

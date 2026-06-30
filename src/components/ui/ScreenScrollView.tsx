@@ -12,10 +12,10 @@
  *      single source of truth (no double-padding fights with the system).
  */
 
-import React from 'react';
-import { ScrollView, ScrollViewProps, View, ViewStyle } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '../../theme/ThemeProvider';
+import React from "react";
+import { ScrollView, ScrollViewProps, View, ViewStyle } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTheme } from "../../theme/ThemeProvider";
 
 /** Approx native tab bar height; content clears it by this + bottom safe area. */
 const TAB_BAR_CLEARANCE = 64;
@@ -48,7 +48,7 @@ export function ScreenScrollView({
       scrollIndicatorInsets={{ bottom: insets.bottom + TAB_BAR_CLEARANCE }}
       contentContainerStyle={[
         {
-          paddingTop: insets.top + t.space[2],
+          paddingTop: 24,
           paddingBottom: insets.bottom + TAB_BAR_CLEARANCE + bottomSpace,
           paddingHorizontal: gutter ? t.gutter : 0,
         },

@@ -10,13 +10,14 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { DraftEntry, Entry, Mood } from './types';
+import type { DraftEntry, Entry, EntrySummary, Mood } from './types';
 import { dayKey, daysAgo, daysBetween } from '../lib/date';
 
 interface JournalState {
   entries: Entry[];
   addEntry: (draft: DraftEntry) => Entry;
   deleteEntry: (id: string) => void;
+  setSummary: (id: string, patch: Partial<EntrySummary>) => void;
   clearAll: () => void;
 }
 
@@ -48,6 +49,16 @@ export const useJournal = create<JournalState>()(
       },
 
       deleteEntry: (id) => set((s) => ({ entries: s.entries.filter((e) => e.id !== id) })),
+
+      // merge generated metadata (gist / themes / reflection) onto an entry
+      setSummary: (id, patch) =>
+        set((s) => ({
+          entries: s.entries.map((e) =>
+            e.id === id
+              ? { ...e, summary: { themes: e.summary?.themes ?? [], ...e.summary, ...patch } }
+              : e,
+          ),
+        })),
 
       clearAll: () => set({ entries: [] }),
     }),

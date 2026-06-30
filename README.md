@@ -146,6 +146,12 @@ As leituras são geradas via **OpenRouter** (API OpenAI-compatível). Sem depend
 
 **Free tier:** 20 req/min, 50 req/dia (1000/dia com US$10 em créditos). O cache por assinatura segura o consumo.
 
+**Por nota:** ao salvar, **cada entrada gera seu próprio insight** em background
+(`generateEntryInsight` → `{ gist, themes, reflection }`), gravado em
+`Entry.summary` e exibido na tela de detalhe — o `gist` aparece também no card da
+timeline. Os agregados semanal/mensal reaproveitam esses `gist`s (resumir sem
+reenviar o texto cru).
+
 **Mínimos:** semanal precisa de ≥3 entradas nos últimos 7 dias; mensal ≥5 nos últimos 30 (abaixo disso a tela mostra "escreva mais um pouco").
 
 ---
