@@ -41,6 +41,7 @@ import {
 import { ThemeProvider as AppThemeProvider } from '../src/theme/ThemeProvider';
 import { navLightTheme, navDarkTheme } from '../src/theme/theme';
 import { useJournal } from '../src/data/store';
+import { useSubscription } from '../src/data/subscription';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -72,6 +73,11 @@ export default function RootLayout() {
     return unsub;
   }, []);
 
+  // Load subscription plans + refresh entitlement.
+  useEffect(() => {
+    useSubscription.getState().init();
+  }, []);
+
   if (!loaded && !error) return null;
 
   return (
@@ -83,6 +89,10 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen
                 name="entry/new"
+                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+              />
+              <Stack.Screen
+                name="paywall"
                 options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
               />
               <Stack.Screen name="entry/[id]" options={{ presentation: 'card' }} />

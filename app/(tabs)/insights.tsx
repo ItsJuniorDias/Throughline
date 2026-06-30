@@ -7,7 +7,9 @@
 
 import React, { useMemo } from 'react';
 import { View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useJournal, averageMood, moodByDay, themeFrequency, computeStreak } from '../../src/data/store';
+import { usePremium } from '../../src/data/subscription';
 import { monthLabel } from '../../src/lib/date';
 import { moodMeta } from '../../src/lib/mood';
 import { useTheme } from '../../src/theme/ThemeProvider';
@@ -18,6 +20,7 @@ import {
   SectionHeader,
   MoodTrendChart,
   InsightCard,
+  MonthlyReportCard,
 } from '../../src/components/journal';
 import type { Mood } from '../../src/data/types';
 
@@ -86,6 +89,8 @@ function ThemeBars({ entries }: { entries: ReturnType<typeof themeFrequency> }) 
 
 export default function InsightsScreen() {
   const t = useTheme();
+  const router = useRouter();
+  const isPremium = usePremium();
   const entries = useJournal((s) => s.entries);
 
   const month = useMemo(() => moodByDay(entries, 30), [entries]);
@@ -137,20 +142,24 @@ export default function InsightsScreen() {
         />
       ) : null}
 
-      {/* premium teaser — the monetization hero */}
-      <InsightCard
-        locked
-        eyebrow="Monthly report"
-        title={`Your ${monthLabel().split(' ')[0]}, read closely`}
-        body="A deep, longitudinal read of the month — patterns across mood and themes, what shifted, and the throughlines you can’t see day to day."
-        bullets={[
-          'Mood × theme correlations across the whole month',
-          'What changed since last month',
-          'The decisions and moments that defined it',
-        ]}
-        ctaLabel="Unlock the monthly report"
-        onUnlock={() => {}}
-      />
+      {/* monthly report — gated on Premium */}
+      {isPremium ? (
+        <MonthlyReportCard />
+      ) : (
+        <InsightCard
+          locked
+          eyebrow="Monthly report"
+          title={`Your ${monthLabel().split(' ')[0]}, read closely`}
+          body="A deep, longitudinal read of the month — patterns across mood and themes, what shifted, and the throughlines you can’t see day to day."
+          bullets={[
+            'Mood × theme correlations across the whole month',
+            'What changed since last month',
+            'The decisions and moments that defined it',
+          ]}
+          ctaLabel="Unlock the monthly report"
+          onUnlock={() => router.push('/paywall')}
+        />
+      )}
 
       <Text variant="caption" color="textMuted" align="center">
         Observations are reflections, not advice.

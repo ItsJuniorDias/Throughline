@@ -6,8 +6,10 @@
  */
 
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, Switch, View } from 'react-native';
+import { Alert, Linking, Platform, Pressable, Switch, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useJournal, computeStreak } from '../../src/data/store';
+import { usePremium, useSubscription } from '../../src/data/subscription';
 import { shortDate } from '../../src/lib/date';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { ScreenScrollView } from '../../src/components/ui/ScreenScrollView';
@@ -63,9 +65,30 @@ function Row({
 
 export default function YouScreen() {
   const t = useTheme();
+  const router = useRouter();
   const entries = useJournal((s) => s.entries);
   const clearAll = useJournal((s) => s.clearAll);
+  const isPremium = usePremium();
+  const restore = useSubscription((s) => s.restore);
   const [reminders, setReminders] = useState(true);
+
+  const manageSubscription = () => {
+    const url =
+      Platform.OS === 'ios'
+        ? 'https://apps.apple.com/account/subscriptions'
+        : 'https://play.google.com/store/account/subscriptions';
+    Linking.openURL(url).catch(() => {});
+  };
+
+  const onRestore = async () => {
+    const ok = await restore();
+    Alert.alert(
+      ok ? 'Purchases restored' : 'Nothing to restore',
+      ok
+        ? 'Throughline Premium is active on this account.'
+        : 'We couldn’t find a previous purchase on this account.',
+    );
+  };
 
   const streak = useMemo(() => computeStreak(entries), [entries]);
   const since = entries.length > 0 ? entries[entries.length - 1].createdAt : null;
@@ -115,21 +138,48 @@ export default function YouScreen() {
       </Card>
 
       {/* premium */}
-      <Pressable>
-        <Card accentRail elevation="sm" style={{ gap: t.space[3] }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Icon name="award" size={18} colorKey="accentText" />
-            <Text variant="subheading" color="accentText">
-              Throughline Premium
-            </Text>
-          </View>
-          <Text variant="body" color="textSecondary">
-            Deep monthly reports, richer weekly insights, and pattern analytics across your whole
-            history.
+      <Card accentRail elevation="sm" style={{ gap: t.space[3] }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Icon name="award" size={18} colorKey="accentText" />
+          <Text variant="subheading" color="accentText" style={{ flex: 1 }}>
+            Throughline Premium
           </Text>
-          <Button label="See what’s inside" variant="secondary" size="sm" onPress={() => {}} />
-        </Card>
-      </Pressable>
+          {isPremium ? (
+            <View
+              style={{
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: t.radius.full,
+                backgroundColor: t.colors.accent,
+              }}
+            >
+              <Text variant="mono" tint={t.colors.textOnAccent}>
+                ACTIVE
+              </Text>
+            </View>
+          ) : null}
+        </View>
+        <Text variant="body" color="textSecondary">
+          {isPremium
+            ? 'Your monthly reports, full pattern analytics, and export are unlocked. Thank you for supporting the work.'
+            : 'Deep monthly reports, richer weekly insights, and pattern analytics across your whole history.'}
+        </Text>
+        {isPremium ? (
+          <Button
+            label="Manage subscription"
+            variant="ghost"
+            size="sm"
+            onPress={manageSubscription}
+          />
+        ) : (
+          <Button
+            label="See what’s inside"
+            variant="secondary"
+            size="sm"
+            onPress={() => router.push('/paywall')}
+          />
+        )}
+      </Card>
 
       {/* settings */}
       <Card padded={t.space[2]} elevation="sm">
@@ -167,6 +217,13 @@ export default function YouScreen() {
             label="Export entries"
             detail="Download everything as JSON"
             onPress={() => Alert.alert('Export', 'Hook this up to your export flow.')}
+          />
+          <Divider />
+          <Row
+            icon="refresh-ccw"
+            label="Restore purchases"
+            detail="Already subscribed? Restore on this device"
+            onPress={onRestore}
           />
         </View>
       </Card>

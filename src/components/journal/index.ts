@@ -7,3 +7,4 @@ export * from './StreakBadge';
 export * from './SectionHeader';
 export * from './MoodTrendChart';
 export * from './InsightCard';
+export * from './MonthlyReportCard';

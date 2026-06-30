@@ -18,9 +18,9 @@
  *     ScreenScrollView) for the scroll-edge + minimize behaviors to work.
  */
 
-import { NativeTabs } from "expo-router/unstable-native-tabs";
-import { Icon, Label } from "expo-router";
-import { useTheme } from "../../src/theme/ThemeProvider";
+import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { Icon, Label } from 'expo-router';
+import { useTheme } from '../../src/theme/ThemeProvider';
 
 export default function TabLayout() {
   const t = useTheme();
@@ -28,18 +28,12 @@ export default function TabLayout() {
   return (
     <NativeTabs minimizeBehavior="onScrollDown" tintColor={t.colors.accent}>
       <NativeTabs.Trigger name="index">
-        <Icon
-          sf={{ default: "sun.max", selected: "sun.max.fill" }}
-          md="wb_sunny"
-        />
+        <Icon sf={{ default: 'sun.max', selected: 'sun.max.fill' }} md="wb_sunny" />
         <Label>Today</Label>
       </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="timeline">
-        <Icon
-          sf={{ default: "book.closed", selected: "book.closed.fill" }}
-          md="menu_book"
-        />
+        <Icon sf={{ default: 'book.closed', selected: 'book.closed.fill' }} md="menu_book" />
         <Label>Timeline</Label>
       </NativeTabs.Trigger>
 
@@ -50,10 +44,7 @@ export default function TabLayout() {
 
       <NativeTabs.Trigger name="you">
         <Icon
-          sf={{
-            default: "person.crop.circle",
-            selected: "person.crop.circle.fill",
-          }}
+          sf={{ default: 'person.crop.circle', selected: 'person.crop.circle.fill' }}
           md="account_circle"
         />
         <Label>You</Label>
