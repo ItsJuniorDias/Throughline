@@ -22,6 +22,7 @@ interface SubState {
   initialized: boolean;
 
   init: () => Promise<void>;
+  reloadPlans: () => Promise<void>;
   selectPlan: (id: string) => void;
   purchaseSelected: () => Promise<boolean>;
   restore: () => Promise<boolean>;
@@ -45,7 +46,10 @@ export const useSubscription = create<SubState>()(
           const plans = await purchases.getPlans();
           set((s) => ({
             plans,
-            selectedPlanId: s.selectedPlanId ?? plans[0]?.id ?? null,
+            selectedPlanId:
+              s.selectedPlanId && plans.some((p) => p.id === s.selectedPlanId)
+                ? s.selectedPlanId
+                : plans[0]?.id ?? null,
             status: 'idle',
             initialized: true,
           }));
@@ -53,9 +57,29 @@ export const useSubscription = create<SubState>()(
           if (PURCHASES_IS_LIVE) {
             const { isPremium } = await purchases.getStatus();
             set({ isPremium });
+            // keep entitlement fresh as renewals / expirations / external purchases land
+            purchases.addStatusListener(({ isPremium }) => set({ isPremium }));
           }
         } catch (e: any) {
           set({ status: 'idle', error: e?.message ?? 'Could not load plans', initialized: true });
+        }
+      },
+
+      reloadPlans: async () => {
+        set({ status: 'loading', error: null });
+        try {
+          await purchases.init();
+          const plans = await purchases.getPlans();
+          set((s) => ({
+            plans,
+            selectedPlanId:
+              s.selectedPlanId && plans.some((p) => p.id === s.selectedPlanId)
+                ? s.selectedPlanId
+                : plans[0]?.id ?? null,
+            status: 'idle',
+          }));
+        } catch (e: any) {
+          set({ status: 'idle', error: e?.message ?? 'Could not load plans' });
         }
       },
 

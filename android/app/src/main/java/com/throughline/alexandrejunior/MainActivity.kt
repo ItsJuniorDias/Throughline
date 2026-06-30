@@ -1,4 +1,4 @@
-package com.throughline.app
+package com.throughline.alexandrejunior
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

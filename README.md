@@ -156,6 +156,22 @@ reenviar o texto cru).
 
 ---
 
+## RevenueCat (paywall)
+
+O paywall puxa **planos, preços, trial e entitlement do RevenueCat** (`src/lib/purchases.ts`).
+
+**Config:**
+- Chaves em `REVENUECAT_API_KEYS` (iOS já com a chave do **Test Store** que você usa; Android é placeholder). Dá pra sobrescrever por env: `EXPO_PUBLIC_RC_IOS_KEY` / `EXPO_PUBLIC_RC_ANDROID_KEY`. Chaves públicas do RevenueCat **não são secretas** (vão no bundle por design).
+- `ENTITLEMENT_ID` (`'Throughline Pro'`) e os identificadores de package/offering **precisam bater exatamente** com o dashboard do RevenueCat — senão `isPremium` nunca fica `true`.
+
+**Como funciona:** `getOfferings()` → `current.availablePackages` vira `Plan[]` (título, `priceString` localizado, `pricePerMonthString`, trial via `introPrice.price === 0` ou `freePhase` no Android, savings anual×mensal). `purchasePackage` confere `customerInfo.entitlements.active[ENTITLEMENT_ID]`; `restorePurchases`/`getCustomerInfo` idem; um listener (`addCustomerInfoUpdateListener`) mantém o entitlement fresco em renovação/expiração.
+
+**Fallback:** se a chave da plataforma for placeholder (ex.: Android hoje), cai no **provider mock** e o paywall segue funcional. A seleção é automática (`keyLooksReal` em `purchases.ts`).
+
+**Importante:** RevenueCat é módulo nativo → precisa de **development build** (não Expo Go). A chave `test_…` funciona no simulador sem montar produtos na App Store Connect.
+
+---
+
 ## Posicionamento & segurança
 
 - **Journaling / autoconhecimento, nunca terapia.** Sem linguagem clínica, sem

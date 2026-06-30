@@ -1,10 +1,11 @@
 /**
- * Paywall — the subscription screen, presented as a modal.
+ * Paywall — the subscription screen (pushed onto the navigation stack).
  *
  * Sells the outcome (the longitudinal read you can't see day to day), lists what
  * Premium unlocks, lets you pick a plan, and runs the purchase through the
- * subscription store. Handles loading / purchasing / success / already-a-member
- * states, plus restore and the App Store auto-renew disclosure.
+ * subscription store. Plans, prices, trials, and entitlement all come from
+ * RevenueCat (see src/lib/purchases.ts). Handles loading / purchasing / success /
+ * already-a-member states, plus restore and the App Store auto-renew disclosure.
  */
 
 import React, { useEffect, useState } from "react";
@@ -239,6 +240,7 @@ export default function Paywall() {
     isPremium,
     error,
     init,
+    reloadPlans,
     selectPlan,
     purchaseSelected,
     restore,
@@ -403,7 +405,7 @@ export default function Paywall() {
             <Text variant="callout" color="textMuted" align="center">
               Loading plans…
             </Text>
-          ) : (
+          ) : plans.length > 0 ? (
             plans.map((p) => (
               <PlanCard
                 key={p.id}
@@ -412,6 +414,24 @@ export default function Paywall() {
                 onPress={() => selectPlan(p.id)}
               />
             ))
+          ) : (
+            <View
+              style={{
+                gap: t.space[3],
+                alignItems: "center",
+                paddingVertical: t.space[2],
+              }}
+            >
+              <Text variant="callout" color="textMuted" align="center">
+                Plans aren’t available right now.
+              </Text>
+              <Button
+                label="Try again"
+                variant="secondary"
+                size="sm"
+                onPress={reloadPlans}
+              />
+            </View>
           )}
           {error ? (
             <Text variant="caption" color="danger" align="center">

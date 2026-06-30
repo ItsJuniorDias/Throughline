@@ -9,10 +9,10 @@
     "icon": "./assets/icon.png",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.throughline.app"
+      "bundleIdentifier": "com.throughline.alexandre-junior"
     },
     "android": {
-      "package": "com.throughline.app",
+      "package": "com.throughline.alexandrejunior",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#15171B"

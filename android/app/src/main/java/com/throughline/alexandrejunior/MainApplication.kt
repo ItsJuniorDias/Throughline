@@ -1,4 +1,4 @@
-package com.throughline.app
+package com.throughline.alexandrejunior
 
 import android.app.Application
 import android.content.res.Configuration
