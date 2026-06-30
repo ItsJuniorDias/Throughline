@@ -11,15 +11,12 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { DraftEntry, Entry, Mood } from './types';
-import { buildSeedEntries } from './mock';
 import { dayKey, daysAgo, daysBetween } from '../lib/date';
 
 interface JournalState {
   entries: Entry[];
-  hasSeeded: boolean;
   addEntry: (draft: DraftEntry) => Entry;
   deleteEntry: (id: string) => void;
-  seedIfEmpty: () => void;
   clearAll: () => void;
 }
 
@@ -29,9 +26,8 @@ function uid(): string {
 
 export const useJournal = create<JournalState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       entries: [],
-      hasSeeded: false,
 
       addEntry: (draft) => {
         const entry: Entry = {
@@ -53,19 +49,12 @@ export const useJournal = create<JournalState>()(
 
       deleteEntry: (id) => set((s) => ({ entries: s.entries.filter((e) => e.id !== id) })),
 
-      seedIfEmpty: () => {
-        const { entries, hasSeeded } = get();
-        if (entries.length === 0 && !hasSeeded) {
-          set({ entries: buildSeedEntries(), hasSeeded: true });
-        }
-      },
-
-      clearAll: () => set({ entries: [], hasSeeded: true }),
+      clearAll: () => set({ entries: [] }),
     }),
     {
       name: 'throughline.journal.v1',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (s) => ({ entries: s.entries, hasSeeded: s.hasSeeded }),
+      partialize: (s) => ({ entries: s.entries }),
     },
   ),
 );

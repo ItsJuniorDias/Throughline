@@ -129,6 +129,27 @@ Insights já é esse gancho.
 
 ---
 
+## IA / OpenRouter (geração de insights)
+
+As leituras são geradas via **OpenRouter** (API OpenAI-compatível). Sem dependência nova — só `fetch`.
+
+**Setup:** a chave fica em `.env` como `EXPO_PUBLIC_OPENROUTER_API_KEY` (já incluída neste zip pra rodar de imediato; o `.gitignore` ignora `.env`, e há um `.env.example`).
+
+> ⚠️ **Segurança:** variáveis `EXPO_PUBLIC_*` são **embutidas no bundle** — não são secretas. Qualquer um extrai a chave de um build publicado. **Rotacione** a chave e, pra produção, mande as chamadas por um **proxy/backend** guardando a chave de verdade lá.
+
+**Arquivos:**
+- `src/lib/openrouter.ts` — cliente (endpoint, headers, timeout de 45s, tratamento de 401/402/429, parse de JSON tolerante a fences/prosa). `MODELS.fast` e `MODELS.report` apontam pro Llama 3.3 70B **grátis**.
+- `src/lib/insights.ts` — monta o **digest compacto** (1 linha por entrada: data · humor · tags · gist) e gera a **observação semanal** e o **relatório mensal** (JSON estruturado). Os prompts proíbem diagnóstico/conselho — reflexão, não terapia.
+- `src/data/insights.ts` — store que **cacheia** o resultado por *assinatura* (qtd de entradas na janela + id da mais recente), então só chama o modelo quando o diário muda; persiste em AsyncStorage; aplica o **guardrail de crise** (não manda conteúdo de autolesão pro modelo).
+
+**Trocar o modelo:** pra um mensal mais forte, troque `MODELS.report` por um frontier pago (ex.: `anthropic/claude-sonnet-4-6` ou `openai/gpt-4.1`). O semanal pode ficar no grátis.
+
+**Free tier:** 20 req/min, 50 req/dia (1000/dia com US$10 em créditos). O cache por assinatura segura o consumo.
+
+**Mínimos:** semanal precisa de ≥3 entradas nos últimos 7 dias; mensal ≥5 nos últimos 30 (abaixo disso a tela mostra "escreva mais um pouco").
+
+---
+
 ## Posicionamento & segurança
 
 - **Journaling / autoconhecimento, nunca terapia.** Sem linguagem clínica, sem
@@ -144,7 +165,10 @@ Insights já é esse gancho.
 
 ## Próximos passos sugeridos
 
-1. Plugar o pipeline de **OpenRouter** (extração por entrada → rollup semanal/mensal).
+1. ✅ **OpenRouter** plugado (observação semanal + relatório mensal, com cache e
+   guardrail de crise). Próximo passo de escala: extrair `summary.gist` **por
+   entrada na escrita** (modelo barato) e fazer o rollup a partir dos resumos, em
+   vez de mandar o texto das entradas da janela.
 2. **RevenueCat** + paywall acionado quando o primeiro relatório mensal está pronto.
 3. Escolher o nicho do insight (decision journal pra builders, ou um nicho de vida)
    e ajustar prompts + copy do relatório.

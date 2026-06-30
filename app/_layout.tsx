@@ -40,7 +40,6 @@ import {
 
 import { ThemeProvider as AppThemeProvider } from "../src/theme/ThemeProvider";
 import { navLightTheme, navDarkTheme } from "../src/theme/theme";
-import { useJournal } from "../src/data/store";
 import { useSubscription } from "../src/data/subscription";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -64,14 +63,6 @@ export default function RootLayout() {
   useEffect(() => {
     if (loaded || error) SplashScreen.hideAsync().catch(() => {});
   }, [loaded, error]);
-
-  // Seed demo data only after persisted state has hydrated, so real entries win.
-  useEffect(() => {
-    const seed = () => useJournal.getState().seedIfEmpty();
-    if (useJournal.persist.hasHydrated()) seed();
-    const unsub = useJournal.persist.onFinishHydration(seed);
-    return unsub;
-  }, []);
 
   // Load subscription plans + refresh entitlement.
   useEffect(() => {

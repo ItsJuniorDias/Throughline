@@ -1,19 +1,18 @@
 /**
- * MonthlyReportCard — what the premium "monthly report" looks like once
- * unlocked. In production the narrative sections are filled by the frontier-
- * model rollup; here they're composed from real aggregates (mood, themes, best
- * day) plus sample prose so the layout and perceived value are real.
+ * MonthlyReportCard — the premium monthly report, now filled by the OpenRouter
+ * rollup. It's a presentational card: the screen owns generation/caching and
+ * passes the result + status in. A small locally-computed stats strip (days
+ * written, avg mood) grounds the AI narrative in real numbers.
  */
 
-import React, { useMemo } from 'react';
-import { View } from 'react-native';
-import { useJournal, averageMood, themeFrequency, moodByDay } from '../../data/store';
-import { monthLabel, shortDate } from '../../lib/date';
-import { moodMeta } from '../../lib/mood';
+import React from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { monthLabel } from '../../lib/date';
 import { useTheme } from '../../theme/ThemeProvider';
 import { Text } from '../ui/Text';
+import { Button } from '../ui/Button';
 import { Icon } from '../ui/Divider';
-import type { Mood } from '../../data/types';
+import type { MonthlyReport } from '../../data/insights';
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   const t = useTheme();
@@ -27,24 +26,32 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   );
 }
 
-export function MonthlyReportCard() {
+export interface MonthlyReportCardProps {
+  report: MonthlyReport | null;
+  status: 'idle' | 'loading' | 'error';
+  error?: string | null;
+  onRetry: () => void;
+  written: number;
+  avgLabel?: string;
+  avgColor?: string;
+  enoughData: boolean;
+}
+
+export function MonthlyReportCard({
+  report,
+  status,
+  error,
+  onRetry,
+  written,
+  avgLabel,
+  avgColor,
+  enoughData,
+}: MonthlyReportCardProps) {
   const t = useTheme();
-  const entries = useJournal((s) => s.entries);
-
-  const data = useMemo(() => {
-    const month = moodByDay(entries, 30);
-    const avg = averageMood(entries, 30);
-    const themes = themeFrequency(entries, 30).slice(0, 3);
-    const written = month.filter((d) => d.count > 0).length;
-    // best day = highest single-entry mood, most recent wins ties
-    const best = entries
-      .filter((e) => new Date(e.createdAt) >= new Date(Date.now() - 30 * 864e5))
-      .sort((a, b) => b.mood - a.mood)[0];
-    return { avg, themes, written, best };
-  }, [entries]);
-
-  const avgMeta = data.avg != null ? moodMeta(Math.round(data.avg) as Mood) : null;
-  const topTheme = data.themes[0]?.tag;
+  // spinner only while there's nothing to show yet (keep an existing report
+  // visible during a forced regenerate)
+  const showSpinner =
+    !report && (status === 'loading' || (enoughData && status !== 'error'));
 
   return (
     <View
@@ -81,70 +88,131 @@ export function MonthlyReportCard() {
       </View>
 
       <View style={{ padding: t.space[5], gap: t.space[5] }}>
-        <Text variant="title" color="text">
-          {avgMeta
-            ? `A month that leaned ${avgMeta.label.toLowerCase()}`
-            : 'Your month, read closely'}
-        </Text>
-
-        <Section label="Overview">
-          <Text variant="serifBody" color="textSecondary">
-            {data.written > 0
-              ? `You wrote on ${data.written} of the last 30 days${
-                  topTheme ? `, returning most often to “${topTheme}.”` : '.'
-                } ${
-                  avgMeta
-                    ? `Mood held around ${avgMeta.label.toLowerCase()}, with the brighter days clustering toward the end of the month.`
-                    : ''
-                }`
-              : 'Once you’ve written across a month, this is where the throughlines you can’t see day to day get pulled together.'}
+        {/* stats strip — real numbers under the narrative */}
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+          <Text variant="mono" color="textMuted">
+            {written} {written === 1 ? 'day' : 'days'} written · 30d
           </Text>
-        </Section>
+          {avgLabel ? (
+            <Text variant="mono" tint={avgColor ?? t.colors.textMuted}>
+              · avg {avgLabel.toLowerCase()}
+            </Text>
+          ) : null}
+        </View>
 
-        {data.themes.length > 0 ? (
-          <Section label="Mood × themes">
-            <View style={{ gap: t.space[2] }}>
-              {data.themes.map((th, i) => (
-                <View key={th.tag} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                  <View
-                    style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: t.colors.accent }}
-                  />
-                  <Text variant="body" color="textSecondary" style={{ flex: 1 }}>
-                    <Text variant="bodyStrong" color="text">
-                      {th.tag}
-                    </Text>{' '}
-                    showed up in {th.count} {th.count === 1 ? 'entry' : 'entries'}
-                    {i === 0 ? ' — your strongest current thread.' : '.'}
+        {!enoughData ? (
+          <Text variant="serifBody" color="textSecondary">
+            Write a few more entries this month and your report will appear here — the throughlines
+            you can’t see day to day, pulled together.
+          </Text>
+        ) : showSpinner ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: t.space[3], paddingVertical: t.space[3] }}>
+            <ActivityIndicator color={t.colors.accent} />
+            <Text variant="body" color="textMuted">
+              Reading your month…
+            </Text>
+          </View>
+        ) : report ? (
+          <>
+            <Text variant="title" color="text">
+              {report.title}
+            </Text>
+
+            {report.overview ? (
+              <Section label="Overview">
+                <Text variant="serifBody" color="textSecondary">
+                  {report.overview}
+                </Text>
+              </Section>
+            ) : null}
+
+            {report.themes.length > 0 ? (
+              <Section label="Mood × themes">
+                <View style={{ gap: t.space[2] }}>
+                  {report.themes.map((th) => (
+                    <View key={th.tag} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+                      <View
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: 3,
+                          backgroundColor: t.colors.accent,
+                          marginTop: 7,
+                        }}
+                      />
+                      <Text variant="body" color="textSecondary" style={{ flex: 1 }}>
+                        <Text variant="bodyStrong" color="text">
+                          {th.tag}
+                        </Text>{' '}
+                        — {th.note}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </Section>
+            ) : null}
+
+            {report.moodNarrative ? (
+              <Section label="Mood">
+                <Text variant="body" color="textSecondary">
+                  {report.moodNarrative}
+                </Text>
+              </Section>
+            ) : null}
+
+            {report.definingMoment ? (
+              <Section label="A moment that defined it">
+                <View
+                  style={{
+                    borderLeftWidth: 3,
+                    borderLeftColor: t.colors.accent,
+                    paddingLeft: t.space[4],
+                    gap: 4,
+                  }}
+                >
+                  <Text variant="mono" color="textMuted">
+                    {report.definingMoment.date.toUpperCase()}
+                  </Text>
+                  <Text variant="serifQuote" color="text">
+                    {report.definingMoment.note}
                   </Text>
                 </View>
-              ))}
-            </View>
-          </Section>
-        ) : null}
+              </Section>
+            ) : null}
 
-        {data.best ? (
-          <Section label="A day that defined it">
+            {report.closing ? (
+              <Text variant="serifBody" color="text">
+                {report.closing}
+              </Text>
+            ) : null}
+
             <View
               style={{
-                borderLeftWidth: 3,
-                borderLeftColor: moodMeta(data.best.mood).color,
-                paddingLeft: t.space[4],
-                gap: 4,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginTop: t.space[1],
               }}
             >
-              <Text variant="mono" color="textMuted">
-                {shortDate(data.best.createdAt).toUpperCase()}
+              <Text variant="caption" color="textMuted" style={{ flex: 1 }}>
+                Generated from your entries · a reflection, not advice.
               </Text>
-              <Text variant="serifQuote" color="text" numberOfLines={3}>
-                {data.best.text}
-              </Text>
+              <Button label="Regenerate" variant="ghost" size="sm" onPress={onRetry} />
             </View>
-          </Section>
+          </>
+        ) : status === 'error' ? (
+          <View style={{ gap: t.space[3] }}>
+            <Text variant="body" color="textSecondary">
+              Couldn’t generate the report.
+            </Text>
+            {error ? (
+              <Text variant="caption" color="textMuted">
+                {error}
+              </Text>
+            ) : null}
+            <Button label="Try again" variant="secondary" size="sm" onPress={onRetry} />
+          </View>
         ) : null}
-
-        <Text variant="caption" color="textMuted">
-          Generated from your entries · a reflection, not advice.
-        </Text>
       </View>
     </View>
   );
