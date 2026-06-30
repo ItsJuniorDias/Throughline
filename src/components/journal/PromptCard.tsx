@@ -4,12 +4,12 @@
  * as the day's invitation to write.
  */
 
-import React from 'react';
-import { Pressable, View } from 'react-native';
-import { useTheme } from '../../theme/ThemeProvider';
-import { haptics } from '../../lib/haptics';
-import { Text } from '../ui/Text';
-import { Icon } from '../ui/Divider';
+import React from "react";
+import { Pressable, View } from "react-native";
+import { useTheme } from "../../theme/ThemeProvider";
+import { haptics } from "../../lib/haptics";
+import { Text } from "../ui/Text";
+import { Icon } from "../ui/Divider";
 
 export interface PromptCardProps {
   prompt: string;
@@ -32,13 +32,13 @@ export function PromptCard({ prompt, onPress }: PromptCardProps) {
         backgroundColor: t.colors.surface,
         borderWidth: 1,
         borderColor: t.colors.border,
-        overflow: 'hidden',
-        ...t.shadow('sm'),
+        overflow: "hidden",
+        ...t.shadow("sm"),
       })}
     >
       <View
         style={{
-          position: 'absolute',
+          position: "absolute",
           left: 0,
           top: 0,
           bottom: 0,
@@ -50,10 +50,12 @@ export function PromptCard({ prompt, onPress }: PromptCardProps) {
         <Text variant="overline" color="accentText">
           Prompt for today
         </Text>
+
         <Text variant="serifQuote" color="text">
           {prompt}
         </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <Text variant="label" color="accentText">
             Write on this
           </Text>

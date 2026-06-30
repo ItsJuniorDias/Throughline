@@ -12,36 +12,36 @@
  *   - Seed demo data after persistence has hydrated (so stored entries win).
  */
 
-import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
-import { ThemeProvider } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import * as SplashScreen from 'expo-splash-screen';
-import { useFonts } from 'expo-font';
+import { useEffect } from "react";
+import { useColorScheme } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Stack } from "expo-router";
+import { ThemeProvider } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import * as SplashScreen from "expo-splash-screen";
+import { useFonts } from "expo-font";
 import {
   Newsreader_400Regular,
   Newsreader_500Medium,
   Newsreader_600SemiBold,
   Newsreader_400Regular_Italic,
-} from '@expo-google-fonts/newsreader';
+} from "@expo-google-fonts/newsreader";
 import {
   Manrope_400Regular,
   Manrope_500Medium,
   Manrope_600SemiBold,
   Manrope_700Bold,
-} from '@expo-google-fonts/manrope';
+} from "@expo-google-fonts/manrope";
 import {
   IBMPlexMono_400Regular,
   IBMPlexMono_500Medium,
-} from '@expo-google-fonts/ibm-plex-mono';
+} from "@expo-google-fonts/ibm-plex-mono";
 
-import { ThemeProvider as AppThemeProvider } from '../src/theme/ThemeProvider';
-import { navLightTheme, navDarkTheme } from '../src/theme/theme';
-import { useJournal } from '../src/data/store';
-import { useSubscription } from '../src/data/subscription';
+import { ThemeProvider as AppThemeProvider } from "../src/theme/ThemeProvider";
+import { navLightTheme, navDarkTheme } from "../src/theme/theme";
+import { useJournal } from "../src/data/store";
+import { useSubscription } from "../src/data/subscription";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -83,19 +83,25 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ThemeProvider value={scheme === 'dark' ? navDarkTheme : navLightTheme}>
+        <ThemeProvider value={scheme === "dark" ? navDarkTheme : navLightTheme}>
           <AppThemeProvider>
             <Stack screenOptions={{ headerShown: false }}>
               <Stack.Screen name="(tabs)" />
               <Stack.Screen
                 name="entry/new"
-                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+                options={{
+                  presentation: "modal",
+                  animation: "slide_from_bottom",
+                }}
               />
               <Stack.Screen
                 name="paywall"
-                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+                options={{ animation: "slide_from_bottom" }}
               />
-              <Stack.Screen name="entry/[id]" options={{ presentation: 'card' }} />
+              <Stack.Screen
+                name="entry/[id]"
+                options={{ presentation: "card" }}
+              />
               <Stack.Screen name="+not-found" />
             </Stack>
             <StatusBar style="auto" />

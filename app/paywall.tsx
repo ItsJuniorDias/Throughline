@@ -7,46 +7,55 @@
  * states, plus restore and the App Store auto-renew disclosure.
  */
 
-import React, { useEffect, useState } from 'react';
-import { Alert, Linking, Platform, Pressable, ScrollView, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { useSubscription } from '../src/data/subscription';
-import { useTheme } from '../src/theme/ThemeProvider';
-import { haptics } from '../src/lib/haptics';
-import { Text } from '../src/components/ui/Text';
-import { Button } from '../src/components/ui/Button';
-import { Icon, type IconName } from '../src/components/ui/Divider';
-import type { Plan } from '../src/lib/purchases';
+import React, { useEffect, useState } from "react";
+import {
+  Alert,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { useSubscription } from "../src/data/subscription";
+import { useTheme } from "../src/theme/ThemeProvider";
+import { haptics } from "../src/lib/haptics";
+import { Text } from "../src/components/ui/Text";
+import { Button } from "../src/components/ui/Button";
+import { Icon, type IconName } from "../src/components/ui/Divider";
+import type { Plan } from "../src/lib/purchases";
 
-const TERMS_URL = 'https://throughline.app/terms';
-const PRIVACY_URL = 'https://throughline.app/privacy';
+const TERMS_URL = "https://throughline.app/terms";
+const PRIVACY_URL = "https://throughline.app/privacy";
 
 const FEATURES: { icon: IconName; title: string; detail: string }[] = [
   {
-    icon: 'file-text',
-    title: 'Deep monthly reports',
-    detail: 'A frontier-model read of every month — patterns, shifts, and throughlines.',
+    icon: "file-text",
+    title: "Deep monthly reports",
+    detail:
+      "A frontier-model read of every month — patterns, shifts, and throughlines.",
   },
   {
-    icon: 'trending-up',
-    title: 'Pattern analytics',
-    detail: 'Mood and theme trends across your entire history, not just this week.',
+    icon: "trending-up",
+    title: "Pattern analytics",
+    detail:
+      "Mood and theme trends across your entire history, not just this week.",
   },
   {
-    icon: 'git-merge',
-    title: 'Mood × theme correlations',
-    detail: 'See what consistently lifts you and what quietly drains you.',
+    icon: "git-merge",
+    title: "Mood × theme correlations",
+    detail: "See what consistently lifts you and what quietly drains you.",
   },
   {
-    icon: 'sunrise',
-    title: 'Richer weekly insights',
-    detail: 'More than one observation — a fuller picture, every week.',
+    icon: "sunrise",
+    title: "Richer weekly insights",
+    detail: "More than one observation — a fuller picture, every week.",
   },
   {
-    icon: 'download',
-    title: 'Export everything',
-    detail: 'Your full journal, yours to keep, any time.',
+    icon: "download",
+    title: "Export everything",
+    detail: "Your full journal, yours to keep, any time.",
   },
 ];
 
@@ -69,8 +78,8 @@ function PlanCard({
         onPress();
       }}
       style={{
-        flexDirection: 'row',
-        alignItems: 'center',
+        flexDirection: "row",
+        alignItems: "center",
         gap: t.space[3],
         padding: t.space[4],
         borderRadius: t.radius.lg,
@@ -87,19 +96,24 @@ function PlanCard({
           borderRadius: 11,
           borderWidth: 2,
           borderColor: selected ? t.colors.accent : t.colors.borderStrong,
-          alignItems: 'center',
-          justifyContent: 'center',
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
         {selected ? (
           <View
-            style={{ width: 11, height: 11, borderRadius: 6, backgroundColor: t.colors.accent }}
+            style={{
+              width: 11,
+              height: 11,
+              borderRadius: 6,
+              backgroundColor: t.colors.accent,
+            }}
           />
         ) : null}
       </View>
 
       <View style={{ flex: 1 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           <Text variant="subheading" color="text">
             {plan.title}
           </Text>
@@ -121,12 +135,12 @@ function PlanCard({
         {plan.perMonthString ? (
           <Text variant="caption" color="textMuted" style={{ marginTop: 2 }}>
             {plan.perMonthString}
-            {plan.savingsPct ? ` · save ${plan.savingsPct}%` : ''}
+            {plan.savingsPct ? ` · save ${plan.savingsPct}%` : ""}
           </Text>
         ) : null}
       </View>
 
-      <View style={{ alignItems: 'flex-end' }}>
+      <View style={{ alignItems: "flex-end" }}>
         <Text variant="bodyStrong" color="text">
           {plan.priceString}
         </Text>
@@ -138,15 +152,21 @@ function PlanCard({
   );
 }
 
-function MemberView({ celebrate, onDone }: { celebrate: boolean; onDone: () => void }) {
+function MemberView({
+  celebrate,
+  onDone,
+}: {
+  celebrate: boolean;
+  onDone: () => void;
+}) {
   const t = useTheme();
   const insets = useSafeAreaInsets();
 
   const manage = () => {
     const url =
-      Platform.OS === 'ios'
-        ? 'https://apps.apple.com/account/subscriptions'
-        : 'https://play.google.com/store/account/subscriptions';
+      Platform.OS === "ios"
+        ? "https://apps.apple.com/account/subscriptions"
+        : "https://play.google.com/store/account/subscriptions";
     Linking.openURL(url).catch(() => {});
   };
 
@@ -158,8 +178,8 @@ function MemberView({ celebrate, onDone }: { celebrate: boolean; onDone: () => v
         paddingTop: insets.top + t.space[6],
         paddingHorizontal: t.gutter,
         paddingBottom: insets.bottom + t.space[6],
-        alignItems: 'center',
-        justifyContent: 'center',
+        alignItems: "center",
+        justifyContent: "center",
         gap: t.space[5],
       }}
     >
@@ -171,27 +191,38 @@ function MemberView({ celebrate, onDone }: { celebrate: boolean; onDone: () => v
           backgroundColor: t.colors.accentMuted,
           borderWidth: 1.5,
           borderColor: t.colors.accent,
-          alignItems: 'center',
-          justifyContent: 'center',
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        <Icon name={celebrate ? 'check' : 'award'} size={34} colorKey="accentText" />
+        <Icon
+          name={celebrate ? "check" : "award"}
+          size={34}
+          colorKey="accentText"
+        />
       </View>
 
-      <View style={{ alignItems: 'center', gap: t.space[2] }}>
+      <View style={{ alignItems: "center", gap: t.space[2] }}>
         <Text variant="display" align="center">
-          {celebrate ? 'You’re all set' : 'You’re a member'}
+          {celebrate ? "You’re all set" : "You’re a member"}
         </Text>
         <Text variant="body" color="textSecondary" align="center">
           {celebrate
-            ? 'Welcome to Throughline Premium. Your first monthly report is waiting in Insights.'
-            : 'Throughline Premium is active on this account. Thank you for supporting the work.'}
+            ? "Welcome to Throughline Premium. Your first monthly report is waiting in Insights."
+            : "Throughline Premium is active on this account. Thank you for supporting the work."}
         </Text>
       </View>
 
-      <View style={{ alignSelf: 'stretch', gap: t.space[3], marginTop: t.space[4] }}>
+      <View
+        style={{ alignSelf: "stretch", gap: t.space[3], marginTop: t.space[4] }}
+      >
         <Button label="Done" size="lg" fullWidth onPress={onDone} />
-        <Button label="Manage subscription" variant="ghost" fullWidth onPress={manage} />
+        <Button
+          label="Manage subscription"
+          variant="ghost"
+          fullWidth
+          onPress={manage}
+        />
       </View>
     </View>
   );
@@ -220,13 +251,13 @@ export default function Paywall() {
 
   const close = () => {
     if (router.canGoBack()) router.back();
-    else router.replace('/');
+    else router.replace("/");
   };
 
   const selected = plans.find((p) => p.id === selectedPlanId) ?? plans[0];
-  const loading = status === 'loading';
-  const purchasing = status === 'purchasing';
-  const restoring = status === 'restoring';
+  const loading = status === "loading";
+  const purchasing = status === "purchasing";
+  const restoring = status === "restoring";
 
   const onPurchase = async () => {
     const ok = await purchaseSelected();
@@ -242,7 +273,10 @@ export default function Paywall() {
       haptics.success();
       setJustPurchased(true);
     } else {
-      Alert.alert('Nothing to restore', 'We couldn’t find a previous purchase on this account.');
+      Alert.alert(
+        "Nothing to restore",
+        "We couldn’t find a previous purchase on this account.",
+      );
     }
   };
 
@@ -252,32 +286,38 @@ export default function Paywall() {
 
   const ctaLabel = selected?.trialDays
     ? `Start ${selected.trialDays}-day free trial`
-    : 'Subscribe';
+    : "Subscribe";
 
   const trialNote = selected
     ? selected.trialDays
       ? `${selected.trialDays} days free, then ${selected.priceString} / ${selected.period}. Cancel anytime.`
       : `${selected.priceString} / ${selected.period}. Cancel anytime.`
-    : '';
+    : "";
 
   return (
-    <View style={{ flex: 1, backgroundColor: t.colors.bg, paddingTop: insets.top }}>
+    <View
+      style={{ flex: 1, backgroundColor: t.colors.bg, paddingTop: insets.top }}
+    >
       {/* header */}
       <View
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "space-between",
           paddingHorizontal: t.gutter,
           paddingVertical: t.space[2],
         }}
       >
         <Pressable onPress={close} hitSlop={10}>
-          <Icon name="x" size={24} colorKey="textSecondary" />
+          <Icon name="chevron-left" size={26} colorKey="text" />
         </Pressable>
+
         <Pressable onPress={onRestore} hitSlop={10} disabled={restoring}>
-          <Text variant="label" color={restoring ? 'textMuted' : 'textSecondary'}>
-            {restoring ? 'Restoring…' : 'Restore'}
+          <Text
+            variant="label"
+            color={restoring ? "textMuted" : "textSecondary"}
+          >
+            {restoring ? "Restoring…" : "Restore"}
           </Text>
         </Pressable>
       </View>
@@ -291,7 +331,13 @@ export default function Paywall() {
         }}
       >
         {/* hero */}
-        <View style={{ alignItems: 'center', gap: t.space[4], marginTop: t.space[2] }}>
+        <View
+          style={{
+            alignItems: "center",
+            gap: t.space[4],
+            marginTop: t.space[2],
+          }}
+        >
           <View
             style={{
               width: 64,
@@ -300,13 +346,13 @@ export default function Paywall() {
               backgroundColor: t.colors.accentMuted,
               borderWidth: 1.5,
               borderColor: t.colors.accent,
-              alignItems: 'center',
-              justifyContent: 'center',
+              alignItems: "center",
+              justifyContent: "center",
             }}
           >
             <Icon name="award" size={30} colorKey="accentText" />
           </View>
-          <View style={{ gap: t.space[2], alignItems: 'center' }}>
+          <View style={{ gap: t.space[2], alignItems: "center" }}>
             <Text variant="overline" color="accentText">
               Throughline Premium
             </Text>
@@ -314,8 +360,8 @@ export default function Paywall() {
               Read the months you’ve lived
             </Text>
             <Text variant="body" color="textSecondary" align="center">
-              The daily writing is yours free. Premium turns it into the longitudinal picture you
-              can’t see one day at a time.
+              The daily writing is yours free. Premium turns it into the
+              longitudinal picture you can’t see one day at a time.
             </Text>
           </View>
         </View>
@@ -323,15 +369,18 @@ export default function Paywall() {
         {/* features */}
         <View style={{ gap: t.space[4] }}>
           {FEATURES.map((f) => (
-            <View key={f.title} style={{ flexDirection: 'row', gap: t.space[3] }}>
+            <View
+              key={f.title}
+              style={{ flexDirection: "row", gap: t.space[3] }}
+            >
               <View
                 style={{
                   width: 38,
                   height: 38,
                   borderRadius: t.radius.md,
                   backgroundColor: t.colors.accentMuted,
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
                 <Icon name={f.icon} size={18} colorKey="accentText" />
@@ -370,52 +419,67 @@ export default function Paywall() {
             </Text>
           ) : null}
         </View>
-      </ScrollView>
 
-      {/* sticky footer */}
-      <View
-        style={{
-          paddingHorizontal: t.gutter,
-          paddingTop: t.space[3],
-          paddingBottom: insets.bottom + t.space[3],
-          borderTopWidth: 1,
-          borderTopColor: t.colors.border,
-          backgroundColor: t.colors.surface,
-          gap: t.space[3],
-        }}
-      >
-        <Button
-          label={ctaLabel}
-          size="lg"
-          fullWidth
-          loading={purchasing}
-          disabled={loading || !selected}
-          onPress={onPurchase}
-        />
-        {trialNote ? (
-          <Text variant="caption" color="textMuted" align="center">
-            {trialNote}
+        {/* sticky footer */}
+        <View
+          style={{
+            borderTopWidth: 1,
+            borderTopColor: t.colors.border,
+
+            gap: t.space[3],
+          }}
+        >
+          <Button
+            label={ctaLabel}
+            size="lg"
+            fullWidth
+            loading={purchasing}
+            disabled={loading || !selected}
+            onPress={onPurchase}
+          />
+          {trialNote ? (
+            <Text variant="caption" color="textMuted" align="center">
+              {trialNote}
+            </Text>
+          ) : null}
+
+          {/* App Store-required disclosure */}
+          <Text
+            variant="caption"
+            color="textMuted"
+            align="center"
+            style={{ lineHeight: 16 }}
+          >
+            Payment is charged to your store account at confirmation.
+            Subscriptions auto-renew unless cancelled at least 24 hours before
+            the period ends.
           </Text>
-        ) : null}
-
-        {/* App Store-required disclosure */}
-        <Text variant="caption" color="textMuted" align="center" style={{ lineHeight: 16 }}>
-          Payment is charged to your store account at confirmation. Subscriptions auto-renew unless
-          cancelled at least 24 hours before the period ends.
-        </Text>
-        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: t.space[4] }}>
-          <Pressable onPress={() => Linking.openURL(TERMS_URL).catch(() => {})} hitSlop={8}>
-            <Text variant="caption" color="textSecondary">
-              Terms
-            </Text>
-          </Pressable>
-          <Pressable onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})} hitSlop={8}>
-            <Text variant="caption" color="textSecondary">
-              Privacy
-            </Text>
-          </Pressable>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "center",
+              gap: t.space[4],
+            }}
+          >
+            <Pressable
+              onPress={() => Linking.openURL(TERMS_URL).catch(() => {})}
+              hitSlop={8}
+            >
+              <Text variant="caption" color="textSecondary">
+                Terms
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => Linking.openURL(PRIVACY_URL).catch(() => {})}
+              hitSlop={8}
+            >
+              <Text variant="caption" color="textSecondary">
+                Privacy
+              </Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 }
