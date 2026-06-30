@@ -81,13 +81,11 @@ export default function TimelineScreen() {
           }}
         >
           <Icon name="feather" size={28} colorKey="textMuted" />
-
           <Text variant="serifBody" color="textSecondary" align="center">
             {filter
               ? `No entries tagged “${filter}”.`
               : "Your timeline starts with one entry."}
           </Text>
-
           {!filter ? (
             <Button
               label="Write the first one"
@@ -99,7 +97,6 @@ export default function TimelineScreen() {
               label="Clear filter"
               variant="ghost"
               onPress={() => setFilter(null)}
-              fullWidth
             />
           )}
         </View>

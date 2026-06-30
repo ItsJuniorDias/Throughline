@@ -19,7 +19,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { useSubscription } from "../src/data/subscription";
+import { usePremium, useSubscription } from "../src/data/subscription";
 import { useTheme } from "../src/theme/ThemeProvider";
 import { haptics } from "../src/lib/haptics";
 import { Text } from "../src/components/ui/Text";
@@ -235,7 +235,6 @@ export default function Paywall() {
     plans,
     selectedPlanId,
     status,
-    isPremium,
     error,
     init,
     reloadPlans,
@@ -243,6 +242,7 @@ export default function Paywall() {
     purchaseSelected,
     restore,
   } = useSubscription();
+  const isPremium = usePremium(); // effective (honors the local override)
 
   const [justPurchased, setJustPurchased] = useState(false);
 

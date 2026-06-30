@@ -9,7 +9,12 @@ import React, { useMemo, useState } from 'react';
 import { Alert, Linking, Platform, Pressable, Share, Switch, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useJournal, computeStreak } from '../../src/data/store';
-import { usePremium, useSubscription } from '../../src/data/subscription';
+import {
+  usePremium,
+  useSubscription,
+  ALLOW_PREMIUM_OVERRIDE,
+  type PremiumOverride,
+} from '../../src/data/subscription';
 import { shortDate } from '../../src/lib/date';
 import { useTheme } from '../../src/theme/ThemeProvider';
 import { ScreenScrollView } from '../../src/components/ui/ScreenScrollView';
@@ -70,6 +75,9 @@ export default function YouScreen() {
   const clearAll = useJournal((s) => s.clearAll);
   const isPremium = usePremium();
   const restore = useSubscription((s) => s.restore);
+  const premiumOverride = useSubscription((s) => s.premiumOverride);
+  const setPremiumOverride = useSubscription((s) => s.setPremiumOverride);
+  const rcPremium = useSubscription((s) => s.isPremium); // raw RevenueCat/cache value
   const [reminders, setReminders] = useState(true);
 
   const manageSubscription = () => {
@@ -203,6 +211,66 @@ export default function YouScreen() {
           />
         )}
       </Card>
+
+      {/* premium override — dev only, never honored in production builds */}
+      {ALLOW_PREMIUM_OVERRIDE ? (
+        <Card elevation="sm" style={{ gap: t.space[3] }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Icon name="sliders" size={18} colorKey="textSecondary" />
+            <Text variant="subheading" style={{ flex: 1 }}>
+              Premium override
+            </Text>
+            <View
+              style={{
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+                borderRadius: t.radius.full,
+                backgroundColor: t.colors.surfaceMuted,
+                borderWidth: 1,
+                borderColor: t.colors.border,
+              }}
+            >
+              <Text variant="mono" color="textMuted">
+                DEV
+              </Text>
+            </View>
+          </View>
+          <Text variant="caption" color="textMuted">
+            Forces the premium gate locally (saved in AsyncStorage). “Auto” follows
+            RevenueCat, which currently reports {rcPremium ? 'active' : 'inactive'}.
+          </Text>
+          <View style={{ flexDirection: 'row', gap: t.space[2] }}>
+            {(
+              [
+                { label: 'Auto', value: null },
+                { label: 'Premium', value: true },
+                { label: 'Free', value: false },
+              ] as { label: string; value: PremiumOverride }[]
+            ).map((opt) => {
+              const active = premiumOverride === opt.value;
+              return (
+                <Pressable
+                  key={opt.label}
+                  onPress={() => setPremiumOverride(opt.value)}
+                  style={{
+                    flex: 1,
+                    alignItems: 'center',
+                    paddingVertical: t.space[3],
+                    borderRadius: t.radius.md,
+                    borderWidth: 1.5,
+                    borderColor: active ? t.colors.accent : t.colors.border,
+                    backgroundColor: active ? t.colors.accentMuted : t.colors.surface,
+                  }}
+                >
+                  <Text variant="label" color={active ? 'accentText' : 'textSecondary'}>
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </Card>
+      ) : null}
 
       {/* settings */}
       <Card padded={t.space[2]} elevation="sm">

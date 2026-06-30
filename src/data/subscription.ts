@@ -1,9 +1,24 @@
 /**
- * Subscription store — the single source of truth for entitlement.
+ * Subscription store — entitlement state, layered:
  *
- * Persists `isPremium` so the demo (mock provider) unlocks durably across
- * launches. With a live provider (RevenueCat), entitlement is refreshed from
- * the backend on init. Purchase / restore round-trips go through the provider.
+ *   1. RevenueCat (the live provider) is the source of truth for real purchases.
+ *      Its result is mirrored into `isPremium` AND cached in AsyncStorage, so a
+ *      cold start shows the last-known state instantly (no "not premium" flash
+ *      while the SDK boots) and then gets corrected once the SDK refreshes /
+ *      a renewal/expiration lands via the status listener.
+ *
+ *   2. A manual OVERRIDE (`premiumOverride`, also persisted in AsyncStorage) lets
+ *      you force premium on/off for testing without touching the store — handy
+ *      when a sandbox/TestFlight subscription is stuck active and you just want to
+ *      see the paywall again (or preview premium without subscribing).
+ *
+ * Effective premium (what the whole app gates on) = the override when it's set
+ * and honored, otherwise the RevenueCat/cached value. Read it via `usePremium()`
+ * or the `selectIsPremium` selector — never read raw `isPremium` for gating.
+ *
+ * The override is only honored when `ALLOW_PREMIUM_OVERRIDE` is true (defaults to
+ * __DEV__), so a forced-on flag can never unlock premium for real users in a
+ * production build.
  */
 
 import { create } from 'zustand';
@@ -13,8 +28,28 @@ import { purchases, PURCHASES_IS_LIVE, type Plan } from '../lib/purchases';
 
 type Status = 'idle' | 'loading' | 'purchasing' | 'restoring';
 
+/**
+ * Whether the local premium override is honored. Dev builds only by default, so
+ * a forced-on flag can never reach production users. Flip to `true` if you also
+ * need it in a release / TestFlight build — but understand the trade-off: anyone
+ * who can set the flag (e.g. on a jailbroken device) would unlock premium.
+ */
+export const ALLOW_PREMIUM_OVERRIDE: boolean =
+  typeof __DEV__ !== 'undefined' ? __DEV__ : false;
+
+/**
+ * Manual override of the premium state.
+ *   true  → force premium ON  (preview paid features without subscribing)
+ *   false → force premium OFF (see the paywall again despite an active sub)
+ *   null  → no override; follow RevenueCat
+ */
+export type PremiumOverride = boolean | null;
+
 interface SubState {
+  /** Raw entitlement from RevenueCat (or the mock), cached across launches. */
   isPremium: boolean;
+  /** Local test override; see PremiumOverride. */
+  premiumOverride: PremiumOverride;
   plans: Plan[];
   selectedPlanId: string | null;
   status: Status;
@@ -24,6 +59,7 @@ interface SubState {
   init: () => Promise<void>;
   reloadPlans: () => Promise<void>;
   selectPlan: (id: string) => void;
+  setPremiumOverride: (value: PremiumOverride) => void;
   purchaseSelected: () => Promise<boolean>;
   restore: () => Promise<boolean>;
 }
@@ -32,6 +68,7 @@ export const useSubscription = create<SubState>()(
   persist(
     (set, get) => ({
       isPremium: false,
+      premiumOverride: null,
       plans: [],
       selectedPlanId: null,
       status: 'idle',
@@ -56,7 +93,7 @@ export const useSubscription = create<SubState>()(
           // only a real backend can authoritatively refresh entitlement
           if (PURCHASES_IS_LIVE) {
             const { isPremium } = await purchases.getStatus();
-            set({ isPremium });
+            set({ isPremium }); // mirror RC → cache (persisted via partialize)
             // keep entitlement fresh as renewals / expirations / external purchases land
             purchases.addStatusListener(({ isPremium }) => set({ isPremium }));
           }
@@ -84,6 +121,8 @@ export const useSubscription = create<SubState>()(
       },
 
       selectPlan: (id) => set({ selectedPlanId: id }),
+
+      setPremiumOverride: (value) => set({ premiumOverride: value }),
 
       purchaseSelected: async () => {
         const { selectedPlanId } = get();
@@ -115,12 +154,26 @@ export const useSubscription = create<SubState>()(
     {
       name: 'throughline.subscription.v1',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (s) => ({ isPremium: s.isPremium, selectedPlanId: s.selectedPlanId }),
+      partialize: (s) => ({
+        isPremium: s.isPremium,
+        selectedPlanId: s.selectedPlanId,
+        premiumOverride: s.premiumOverride,
+      }),
     },
   ),
 );
 
+/**
+ * Effective premium — the value the app should gate on. The local override wins
+ * when it's set and honored; otherwise we fall back to the RevenueCat/cached
+ * entitlement. Use this everywhere instead of reading raw `isPremium`.
+ */
+export function selectIsPremium(s: SubState): boolean {
+  if (ALLOW_PREMIUM_OVERRIDE && s.premiumOverride !== null) return s.premiumOverride;
+  return s.isPremium;
+}
+
 /** Convenience selector hook for gating premium features. */
-export const usePremium = () => useSubscription((s) => s.isPremium);
+export const usePremium = () => useSubscription(selectIsPremium);
 
 export type { Plan };

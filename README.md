@@ -177,6 +177,17 @@ O paywall puxa **planos, preços, trial e entitlement do RevenueCat** (`src/lib/
 
 **Importante:** RevenueCat é módulo nativo → precisa de **development build** (não Expo Go). A chave `test_…` funciona no simulador sem montar produtos na App Store Connect.
 
+### Estado premium: RevenueCat + AsyncStorage (com override de teste)
+
+O entitlement é resolvido em camadas (`src/data/subscription.ts`):
+
+1. **RevenueCat = fonte de verdade.** No `init`, com provider live, busca o status real e registra um listener (renovação/expiração/compra externa). O resultado é espelhado em `isPremium` **e cacheado no AsyncStorage** (`partialize`), então um cold start já mostra o último estado conhecido — sem o flash de "não premium" enquanto o SDK sobe — e corrige assim que o RC responde.
+2. **Override manual** (`premiumOverride`, também no AsyncStorage): força premium **on/off** localmente. Serve exatamente pro caso de uma assinatura de sandbox/TestFlight presa ativa — dá pra ver o paywall de novo (Free) ou prever o premium sem assinar (Premium).
+
+O app **sempre** consome o premium *efetivo* via `usePremium()` / `selectIsPremium` (nunca o `isPremium` cru). Efetivo = override (quando setado e permitido), senão o valor do RevenueCat/cache.
+
+O override só é honrado quando `ALLOW_PREMIUM_OVERRIDE` é `true` — **default `__DEV__`**, pra um "force ON" nunca chegar em produção. O controle (Auto / Premium / Free) aparece na aba **You** apenas em dev. Se quiser usar em release/TestFlight, troque a constante pra `true` ciente do risco (quem conseguir setar a flag destrava o premium).
+
 ---
 
 ## Posicionamento & segurança
